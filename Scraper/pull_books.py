@@ -27,9 +27,10 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 #setting up scraper
-#URL = 'https://www.goodreads.com/list/show/50.The_Best_Epic_Fantasy_fiction'
-URL = 'https://www.goodreads.com/list/show/1'
+URL = 'https://www.goodreads.com/list/show/50.The_Best_Epic_Fantasy_fiction?page=1'
 page = requests.get(URL)
+
+number_of_pages = 35
 
 soup = BeautifulSoup(page.content,'html.parser')
 results = soup.find(id = 'all_votes')
@@ -39,6 +40,8 @@ results = soup.find(id = 'all_votes')
 # and id are necessary.
 books = results.find_all('tr')
 scraped = []
+scraped_collection = [] #this is so I can go back and pull the whole series of individual books later
+
 for el in books :
     title_elem = el.find('a', class_='bookTitle')
     author_elem = el.find('a', class_='authorName')
@@ -49,7 +52,15 @@ for el in books :
     # or bodies of work in the final product, just books.
     if None in (title_elem, author_elem , av_rating_elem, url_elem):
         continue
-    if ('Boxed Set' in title_elem.text.strip() or 'Collection' in title_elem.text.strip() or 'Anthology' in title_elem.text.strip()):
+    if ('Boxed Set' in title_elem.text.strip() 
+        or 'Collection' in title_elem.text.strip() 
+        or 'Anthology' in title_elem.text.strip()
+        or 'Complete Set' in title_elem.text.strip()):
+        scraped_collection.append([url_elem,
+                title_elem.text.strip(), 
+                author_elem.text.strip(), 
+                av_rating_elem.text.strip()])
+
         continue
     scraped.append([url_elem,
                     title_elem.text.strip(), 
@@ -93,6 +104,10 @@ for el in scraped:
                           volume,
                           av_rating,
                           num_of_ratings])
+#%%
+print(scraped_collection)
+
+#%%
 
 # this is just for ease of exporting, also for visualization if you wanted to add that.
 df = pd.DataFrame(scraped_clean,columns = ['id', 

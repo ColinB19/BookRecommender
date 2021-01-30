@@ -13,12 +13,17 @@ pd.set_option('display.width', 1000)
 check = pipe.Pipeline()
 
 check.preprocess()
-train, test, val = check.split_test_train(testTrainFrac = 1, ratingsWithheldFrac= 0.2, ratingsThresh=4)
 
-model = pipe.Recommender()
-hyper = model.paramSearch(train = train, test = test, num_samples=2, num_threads=20)
+for url in check.books.small_image_url:
+    if len(url) > 200:
+        print('long!')
+
+# train, test, val = check.split_test_train(testTrainFrac = 1, ratingsWithheldFrac= 0.2, ratingsThresh=4)
+
+# model = pipe.Recommender()
+# hyper = model.paramSearch(train = train, test = test, num_samples=2, num_threads=20)
 
 
 #%%
 
-model.recommend_random(check.ratings, check.books, seed = 1234)
+# model.recommend_random(check.ratings, check.books, seed = 1234)

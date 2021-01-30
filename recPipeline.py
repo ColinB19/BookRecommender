@@ -263,18 +263,7 @@ class Recommender():
             # train a model using those hyperparameters
             self.fit(train, **params, num_threads = num_threads)
 
-            prec = precision_at_k(self.model,
-                                  test_interactions = test,
-                                  train_interactions = train,
-                                  num_threads=num_threads)
-            rec = recall_at_k(self.model,
-                              test_interactions = test,
-                              train_interactions = train,
-                              num_threads=num_threads)
-            auc = auc_score(self.model,
-                            test_interactions = test,
-                            train_interactions = train,
-                            num_threads=num_threads)
+            prec, rec, auc = self.score(test = test, trian = train, num_threads = num_threads)
 
             params['precision_mean'] = prec.mean()
             params['recall_mean'] = rec.mean()
@@ -282,7 +271,23 @@ class Recommender():
 
             hyperparams = hyperparams.append(params, ignore_index=True).sort_values(by = 'precision_mean')
         return hyperparams
+    
+    def score(self, test, train, num_threads = 2):
+        prec = precision_at_k(self.model,
+                              test_interactions = test,
+                              train_interactions = train,
+                              num_threads=num_threads)
+        rec = recall_at_k(self.model,
+                          test_interactions = test,
+                          train_interactions = train,
+                          num_threads=num_threads)
+        auc = auc_score(self.model,
+                        test_interactions = test,
+                        train_interactions = train,
+                        num_threads=num_threads)
+        return prec, rec, auc
         
+    
     def recommend_random(self, ratings, books, seed):
         '''
         This function will pick a random user out of the list of known users and print out their top 

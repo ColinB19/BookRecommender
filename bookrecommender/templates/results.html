@@ -6,6 +6,18 @@
 {% block body %}
   <h2>Here are some books based on your search.</h2>
   <h4>Try checking your spelling if you didn't find what you were looking for.</h4>
+  <!-- Search bar again -->
+  <form action="/submit" method = "POST">
+    <div class="form-group">
+      <h3>Search for some books you have already read to rate, the more the better!</h3>
+      <input
+        type="text"
+        name="searchQuery"
+        placeholder="Input book title or author"
+        />
+    </div>
+  </form>
+  <!-- results of search -->
   <div class="table-wrapper">
     <table class="fl-table">
       <thead>

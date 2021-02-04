@@ -1,43 +1,56 @@
-{% extends "base.html" %}
+{% extends "base.html" %} 
+
 {% block head %}
-  <title>Search results</title>
-{% endblock %}
+  <title>Colin's Books - Search results</title>
+{% endblock %} 
 
 {% block body %}
   <h2>Here are some books based on your search.</h2>
-  <h4>Try checking your spelling if you didn't find what you were looking for.</h4>
-  <!-- Search bar again -->
-  <form action="/submit" method = "POST">
-    <div class="form-group">
-      <h3>Search for some books you have already read to rate, the more the better!</h3>
-      <input
-        type="text"
-        name="searchQuery"
-        placeholder="Input book title or author"
-        />
+  <h4>
+    Try checking your spelling if you didn't find what you were looking for.
+  </h4>
+    <!-- Search bar again -->
+    <form action="/submit" method="POST">
+      <div class="form-group">
+        <input type="text" name="searchQuery" class="form-control" placeholder="Input book title or author" />
+      </div>
+    </form>
+    <!-- results of search -->
+    <div class="table-wrapper">
+      <table class="table table-striped table-bordered text-white">
+        <thead>
+          <tr>
+            <th scope="col">Book Image</th>
+            <th scope="col">Title</th>
+            <th scope="col">Author(s)</th>
+            <th scope="col">Rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for result in results %}
+          <tr>
+            <td><img src={{ result.image_url }} /></td>
+            <td>{{ result.title }}</td>
+            <td>{{ result.authors }}</td>
+            <td>
+              <div class= "dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
+                  aria-haspopup="true" aria-expanded="false">
+                  Rate <span class="caret"></span>
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                  <!-- I need a way to maintain the rating after clicked  -->
+                  <button class="dropdown-item" type="button">1</button>
+                  <button class="dropdown-item" type="button">2</button>
+                  <button class="dropdown-item" type="button">3</button>
+                  <button class="dropdown-item" type="button">4</button>
+                  <button class="dropdown-item" type="button">5</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  </form>
-  <!-- results of search -->
-  <div class="table-wrapper">
-    <table class="fl-table">
-      <thead>
-        <tr>
-          <th>Book Image</th>
-          <th>Title</th>
-          <th>Author(s)</th>
-          <th>Number of Ratings</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for result in results %}
-        <tr>
-          <td><img src={{ result.image_url }}></td>
-          <td>{{ result.title }}</td>
-          <td>{{ result.authors }}</td>
-          <td>{{ result.ratings_count }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
 {% endblock %}

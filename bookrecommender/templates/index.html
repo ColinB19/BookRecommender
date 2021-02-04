@@ -1,24 +1,24 @@
-{% extends "base.html" %}
-{% block head %}
-  <title>Hello, bookworms!</title>
-{% endblock %}
+{% extends "base.html" %} {% block head %}
+  <title>Colin's Books</title>
+{% endblock %} 
 
 {% block body %}
-  <div class = "container">
-    <img src="../static/banner.jpg" alt="Books" class="banner" >
-    {% if message %}
-      <p class = "message">{{ message }}</p>
-    {% endif %}
-    <form action="/submit" method = "POST">
-      <div class="form-group">
-        <h3>Search for some books you have already read to rate, the more the better!</h3>
-        <input
-          type="text"
-          name="searchQuery"
-          placeholder="Input book title or author"
-          />
-      </div>
-    </form>
-    <h4>Thanks to <a href="https://unsplash.com/@fredmarriage">Freddie Marriage</a> for the banner photo!</h4>
-  </div>
+  <img src="../static/banner.jpg" class="img-fluid" alt="Books" />
+  {% if message %}
+    <p class="message">{{ message }}</p>
+  {% endif %}
+  <form action="/submit" method="POST">
+    <div class="form-group">
+      <input type="text" name="searchQuery" class="form-control" placeholder="Input book title or author" />
+      <small id="searchBlurb" class="form-text text-muted">Search for some books you have already read to rate, the more the
+        better!</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+  <h4>
+    Thanks to
+    <a href="https://unsplash.com/@fredmarriage">Freddie Marriage</a> for the
+    banner photo!
+  </h4>
+  <!-- Thank goodreads and goodbook-10k people -->
 {% endblock %}

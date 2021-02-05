@@ -1,24 +1,31 @@
-{% extends "base.html" %} {% block head %}
-  <title>Colin's Books</title>
-{% endblock %} 
+{% extends "base.html" %} 
 
 {% block body %}
-  <img src="../static/banner.jpg" class="img-fluid" alt="Books" />
+  <!-- <img src="../static/banner.jpg" class="img-fluid mb-4" alt="Books" /> -->
+
   {% if message %}
     <p class="message">{{ message }}</p>
   {% endif %}
-  <form action="/submit" method="POST">
-    <div class="form-group">
-      <input type="text" name="searchQuery" class="form-control" placeholder="Input book title or author" />
-      <small id="searchBlurb" class="form-text text-muted">Search for some books you have already read to rate, the more the
-        better!</small>
+
+  <div class="row justify-content-md-center">
+    <div class="col-sm-6 content-section">
+      <h1 class="display-1">Welcome to Colin's Book Recommender!</h1>
+
+      <p class="lead text-left">
+        Thanks for checking out my book recommender! This small app will ask you to create an account, then rate several books you've already read. The app will then throw your rating information into a big matrix and perform <strong>collaborative based filtering</strong> (specifically <strong>matrix factorization</strong>) to recommend new books to you that you may like. This is, in broad strokes, how companies like <a href="https://www.amazon.com/">Amazon</a> and <a href="https://www.netflix.com/">Netflix</a> recommend new items or movies to users.
+      </p>
+      <h4 class="display-4">What do I do?</h1>
+      <p class="lead text-left">
+        To start, just register for an account. Then start searching for books you've read before and go ahead and give them ratings. To improve your recommendations, try to rate more books that you enjoyed than that you didn't. Once you've rated at least five books (the more the better), the algorithm will throw you into the matrix and compute your recommendations. This happens every hour, so while you wait check out the popular books to see if you're interested in those!
+      </p>
+
+      <img src="{{ url_for('static', filename = 'banner.jpg')}}"  class="rounded img-fluid" alt="Books" />
+      
+      <small class = "text-muted mb-4">
+        Thanks to <a href="https://unsplash.com/@fredmarriage">Freddie Marriage</a> for the photo!
+      </small>
     </div>
-    <button type="submit" class="btn btn-primary">Search</button>
-  </form>
-  <h4>
-    Thanks to
-    <a href="https://unsplash.com/@fredmarriage">Freddie Marriage</a> for the
-    banner photo!
-  </h4>
-  <!-- Thank goodreads and goodbook-10k people -->
-{% endblock %}
+  </div>
+  <!-- Thank goodreads and goodbook-10k people. Thanks to Corey Schafer for a ton of help on flask, html, css, and databases (https://www.youtube.com/watch?v=QnDWIZuWYW0&list=PL-osiE80TeTs4UjLw5MM6OjgkjFeUxCYH&index=2) -->
+
+{% endblock body %}

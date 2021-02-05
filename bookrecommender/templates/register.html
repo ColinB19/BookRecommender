@@ -1,11 +1,8 @@
 {% extends "base.html" %} 
 
-{% block head %}
- <title>Colin's Books - Register</title>
-{% endblock %} 
-
 {% block body %}
- <div class="content-section">
+<div class="row justify-content-md-center">
+    <div class="col-sm-2 content-section">
      <form method="post" action="">
         {{ form.hidden_tag() }}
         <fieldset class="form-group">
@@ -66,13 +63,14 @@
             </div>
         </fieldset>
         <div class="form-group">
-            {{ form.submit(class = "btn-outline-info") }}
+            {{ form.submit(class = "btn btn-outline-primary my-2 my-sm-0") }}
         </div>
      </form>
  </div>
+</div>
  <div class = "border-top pt-3">
      <small class="text-muted">
          Already have an account? <a class="ml-2" href="{{ url_for('login') }}">Sign In</a>
      </small>
  </div>
-{% endblock %}
+{% endblock body %}

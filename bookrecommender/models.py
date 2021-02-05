@@ -7,7 +7,9 @@ from bookrecommender import Base
 
 # just create tabel models on tables that already exist in DB
 Book = Base.classes.books_meta
-Rating = Base.classes.user_ratings
+aRating = Base.classes.archive_ratings
+uRating = Base.classes.user_ratings
+User = Base.classes.users
 
 
 # class User(db.Model):

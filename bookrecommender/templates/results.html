@@ -1,9 +1,5 @@
 {% extends "base.html" %} 
 
-{% block head %}
-  <title>Colin's Books - Search results</title>
-{% endblock %} 
-
 {% block body %}
   <h2>Here are some books based on your search.</h2>
   <h4>
@@ -17,7 +13,7 @@
     </form>
     <!-- results of search -->
     <div class="table-wrapper">
-      <table class="table table-striped table-bordered text-white">
+      <table class="table table-striped table-bordered text-black">
         <thead>
           <tr>
             <th scope="col">Book Image</th>
@@ -53,4 +49,4 @@
         </tbody>
       </table>
     </div>
-{% endblock %}
+{% endblock body %}

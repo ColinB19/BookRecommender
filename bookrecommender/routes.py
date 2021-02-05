@@ -1,7 +1,7 @@
 from flask import render_template, request, flash, redirect, url_for
-from bookrecommender.models import Book, User
-from bookrecommender import app, db
+from bookrecommender import app, db, bcrypt
 from bookrecommender.forms import RegistrationForm, LoginForm
+from bookrecommender.models import Book, User
 
 
 @app.route('/')
@@ -13,8 +13,12 @@ def index():
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        user = User(username = form.username.data, email = form.email.data, password = hashed_password)
+        db.session.add(user)
+        db.session.commit()
         flash(f'Account created for {form.username.data}!', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
 
 

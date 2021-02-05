@@ -1,6 +1,8 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.automap import automap_base
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
 
 # initialize app and database configuations
 app = Flask(__name__)
@@ -9,6 +11,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://colin:1234@localhost/books'
 app.config['DEBUG'] = True
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
 
 # creates classes out of all of our tables
 Base = automap_base()

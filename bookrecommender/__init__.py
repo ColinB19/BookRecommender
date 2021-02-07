@@ -6,17 +6,17 @@ from flask_login import LoginManager
 
 # initialize app and database configuations
 app = Flask(__name__)
+
 app.config['SECRET_KEY'] = 'e118b0dd389d8706291ead5d5d1b9932'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://colin:1234@localhost/books'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://colin:1234@localhost/bookapp'
 app.config['DEBUG'] = True
+
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-
-# creates classes out of all of our tables
-Base = automap_base()
-Base.prepare(db.engine, reflect=True)
+login_manager.login_view = 'login'
+login_manager.login_message_category = 'info'
 
 # imports all of our route pages
 from bookrecommender import routes

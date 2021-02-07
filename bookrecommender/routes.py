@@ -1,16 +1,21 @@
 from flask import render_template, request, flash, redirect, url_for
 from bookrecommender import app, db, bcrypt
 from bookrecommender.forms import RegistrationForm, LoginForm
-from bookrecommender.models import Book, User
+from bookrecommender.models import Book, User, UserRating
+from flask_login import login_user, current_user, logout_user, login_required
 
 
 @app.route('/')
 @app.route("/home")
 def index():
-    return render_template('index.html')
+    popbooks = Book.query.order_by(Book.ratings_count.desc()).limit(10)
+    return render_template('index.html', popbooks = popbooks)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if current_user.is_authenticated:
+        flash("You're already logged in.", 'info')
+        return redirect(url_for('index'))
     form = RegistrationForm()
     if form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
@@ -24,16 +29,26 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if current_user.is_authenticated:
+        flash("You're already logged in.", 'info')
+        return redirect(url_for('index'))
     form = LoginForm()
     if form.validate_on_submit():
-        if form.email.data == 'admin@blog.com' and form.password.data == 'password':
-            flash('You have been logged in', 'success')
-            return redirect(url_for('index'))
+        user = User.query.filter_by(email = form.email.data).first()
+        if user and bcrypt.check_password_hash(user.password, form.password.data):
+            login_user(user, remember=form.remember.data)
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('index'))
         else:
-            flash('Login unsuccessful, please check username and password.', 'danger')
+            flash('Login unsuccessful, please check email and password.', 'danger')
     return render_template('login.html', title='Login', form=form)
 
-# search bar functionality
+
+
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
 
 
 @app.route('/submit', methods=["POST"])
@@ -54,17 +69,67 @@ def submit():
             try:
                 # query our database for authors or titles with the input
                 # NOTE: this doesn't handle mispellings very well
-                searchResults = (db.session.query(Book)
-                                .filter((Book.authors.ilike(fullQuery)) | (Book.title.ilike(fullQuery)))
-                                .order_by(Book.ratings_count.desc())
-                                .limit(50)
+                searchResults = (Book.query
+                                    .filter((Book.authors.ilike(fullQuery)) | (Book.title.ilike(fullQuery)))
+                                    .order_by(Book.ratings_count.desc())
+                                    .limit(50)
                                 )
-                return render_template("results.html", results=searchResults, title = "Search Results")
+                # if the user has an account, pull their ratings to populate to the page
+                if current_user.is_authenticated:
+                    user_id = current_user.get_id()
+                    userRates = UserRating.query.filter_by(site_id = user_id).all()
+                    return render_template("results.html", 
+                                            results = searchResults, 
+                                            userRates = userRates, 
+                                            title = "Search Results")
+
+                return render_template("results.html", 
+                                        results=searchResults,   
+                                        title = "Search Results")
             except:
                 flash('Uh-oh! Something was wrong with your search.', 'danger')
                 return redirect(url_for('index'))
 
 
-# @app.route('/rate', methods=['POST'])
-# def rate():
-#     return render_template('index.html')
+@app.route('/account')
+@login_required
+def account():
+    if current_user.is_authenticated:
+        user_id = current_user.get_id()
+        bookratings = (db.session.query(Book, UserRating)
+                    .filter(Book.book_id == UserRating.book_id)
+                    .filter(UserRating.site_id == user_id).all()
+                )  
+    return render_template("account.html", bookratings = bookratings)
+    # return render_template('account.html', ratings = books, title='Account')
+
+@app.route('/rate', methods=['POST'])
+def rate():
+    rating = request.form["rating"]
+
+    if current_user.is_authenticated:
+        user_id = current_user.get_id()
+    else:
+        flash('You need to create an account before you do that.', 'danger')
+        return redirect(url_for('login')) 
+    
+    # this is a super inelegant solution but it works for now!
+    book_id = int(rating[1:])
+    site_id = int(user_id)
+    book_rating = int(rating[0])
+    newRating = UserRating(site_id = site_id, book_id = book_id, rating = book_rating)
+
+    check = UserRating.query.filter_by(site_id = site_id, book_id = book_id).first()
+
+    if check is None:
+        # just insert the new book rating if they haven't already rated it.
+        db.session.add(newRating)
+        db.session.commit()
+        return redirect(url_for('account'))
+    else:
+        # delete the old book rating then insert the new one!
+        db.session.delete(check)
+        db.session.add(newRating)
+        db.session.commit()
+
+    return redirect(url_for('account'))

@@ -24,33 +24,50 @@
         <li class="nav-item active">
           <a class="nav-link" href="{{ url_for('index') }}">Home</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-        </li>
+        {% if current_user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('account') }}">Account</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+          </li>
+        {% endif %}
       </ul>
-      <form class="form-inline my-2 my-lg-0" action="/submit" method="POST">
+      <form class="form-inline my-2 my-lg-0" action="{{ url_for('submit') }}" method="POST">
         <input class="form-control mr-sm-2" type="search" name="searchQuery" placeholder="Input book title or author" aria-label="Search">
         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
       </form>
     </div>
   </nav>
 
-  <div class="container-fluid text-center mt-2"> 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class = "alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    {% block body %}{% endblock %}
+
+  <div class="container-fluid text-center mt-2">
+    <div class="row">
+      <div class="col-sm-6 content-section">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class = "alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+      </div>
+    </div>
   </div>
-    <footer class="container-fluid text-center">
-      <p>Footer Text</p>
-    </footer>
+  <div class="container-fluid text-center mt-2">
+      {% block body %}{% endblock %}
+  </div>
+
+  <footer class="container-fluid text-center">
+    <p>Footer Text</p>
+  </footer>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -59,5 +76,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+
 </body>
 </html>

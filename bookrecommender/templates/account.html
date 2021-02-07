@@ -1,0 +1,45 @@
+{% extends "base.html" %} 
+
+{% block body %}
+<div class="row justify-content-md-center">
+    <div class="col-sm-6 content-section">
+    <p class="lead text-center">Hi <strong>{{ current_user.username }}</strong>, here are some books you've read.</p>
+    <div class="table-wrapper">
+        <table class="table table-striped table-bordered text-black">
+          <thead>
+            <tr>
+              <th scope="col">Book Image</th>
+              <th scope="col">Title</th>
+              <th scope="col">Author(s)</th>
+              <th scope="col">Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for br in bookratings %}
+                <tr id = "{{ br[0].book_id }}">
+                    <td><img src={{ br[0].image_url }} /></td>
+                    <td>{{ br[0].title }}</td>
+                    <td>{{ br[0].authors }}</td>
+                    <td>
+                        <div>You gave this book a {{br[1].rating}}.</div>
+                        <form action="{{ url_for('rate') }}" method="POST">
+                            <select name="rating">
+                            <option selected>--</option>
+                            <option value=1{{ br[0].book_id }}>1</option>
+                            <option value=2{{ br[0].book_id }}>2</option>
+                            <option value=3{{ br[0].book_id }}>3</option>
+                            <option value=4{{ br[0].book_id }}>4</option>
+                            <option value=5{{ br[0].book_id }}>5</option>
+                            </select>
+                            <button type="submit" class="btn btn-dark">Rate</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div>
+</div>
+
+{% endblock body %}

@@ -29,3 +29,8 @@ padding: 15px;
 }
 .row.content {height:auto;} 
 }
+
+table {
+    table-layout: fixed;
+    word-wrap: break-word;
+}

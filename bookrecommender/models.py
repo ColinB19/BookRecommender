@@ -3,39 +3,40 @@ Created on Wed Jan 27 20:46:04 2021
 
 @author: colin
 """
-from bookrecommender import Base
 from bookrecommender import login_manager, db
 from flask_login import UserMixin
 
-# figure out how to do cascade on deletes...
 
 
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.query(User).get(int(user_id))
 
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    username = db.Column(db.Integer, unique=True, nullable=False)
+    username = db.Column(db.String(20), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     reviews = db.relationship('UserRating', backref='reader', lazy=True)
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
 
-class UserRating():
+
+class UserRating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
-    site_id=db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False)
+    site_id=db.Column(db.Integer, db.ForeignKey('user.id', ondelete="CASCADE"), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
         return f"UserRating('{self.site_id}', '{self.book_id}', '{self.rating}')"
 
-class ArchiveRating():
+
+class ArchiveRating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False)
     user_id=db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Integer, nullable=False)
 
@@ -50,12 +51,13 @@ class Book(db.Model):
     work_id = db.Column(db.Integer, unique=True)
     books_count = db.Column(db.Integer)
     isbn = db.Column(db.Text)
-    isbn13 = db.Column(db.Real)
-    original_publication_year = db.Column(db.Integer)
+    isbn13 = db.Column(db.Float)
+    authors = db.Column(db.Text)
+    original_publication_year = db.Column(db.Float)
     original_title = db.Column(db.Text)
     title = db.Column(db.Text)
     laguage_code = db.Column(db.Text)
-    average_rating = db.Column(db.Real)
+    average_rating = db.Column(db.Float)
     ratings_count = db.Column(db.Integer)
     work_ratings_count = db.Column(db.Integer)
     work_text_reviews_count = db.Column(db.Integer)

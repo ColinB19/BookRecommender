@@ -78,5 +78,30 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 
+    <!-- This makes it so a user can't submit "--" as an option when rating a book. I'm pretty proud of this lol.-->
+    <script>
+      $(document).ready( function() {
+        $("select").on('change',function(){
+          if($(this).find('option:selected').text() == "--")
+              $("#submit_rate"+this.id).attr('disabled', true);
+          else
+              $("#submit_rate"+this.id).attr('disabled', false);
+        });
+      });
+    </script>
+
+    <!-- <script type=text/javascript>
+      $(function() {
+        $('a#test').on('click', function(e) {
+          e.preventDefault()
+          $.getJSON('/background_process_test',
+              function(data) {
+            //do nothing
+          });
+          return false;
+        });
+      });
+    </script> -->
+
 </body>
 </html>

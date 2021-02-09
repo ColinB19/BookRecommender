@@ -8,7 +8,9 @@ from flask_login import login_user, current_user, logout_user, login_required
 @app.route('/')
 @app.route("/home")
 def index():
-    popbooks = Book.query.order_by(Book.ratings_count.desc()).limit(10)
+    # Let's just render the most popular books to the front page.
+    # I also want to have an update section for the site.
+    popbooks = Book.query.order_by(Book.ratings_count.desc()).limit(15)
     return render_template('index.html', popbooks = popbooks)
 
 @app.route("/register", methods=["GET", "POST"])
@@ -91,6 +93,7 @@ def submit():
                 return redirect(url_for('index'))
 
 
+
 @app.route('/account')
 @login_required
 def account():
@@ -114,6 +117,7 @@ def rate():
         return redirect(url_for('login')) 
     
     # this is a super inelegant solution but it works for now!
+
     book_id = int(rating[1:])
     site_id = int(user_id)
     book_rating = int(rating[0])

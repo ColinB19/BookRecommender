@@ -31,15 +31,15 @@
                 {% endif %}
               {% endfor %}
                 <form action="{{ url_for('rate') }}" method="POST">
-                  <select name="rating">
-                    <option selected>--</option>
+                  <select name="rating" id="{{ result.book_id }}">
+                    <option selected value="--">--</option>
                     <option value=1{{ result.book_id }}>1</option>
                     <option value=2{{ result.book_id }}>2</option>
                     <option value=3{{ result.book_id }}>3</option>
                     <option value=4{{ result.book_id }}>4</option>
                     <option value=5{{ result.book_id }}>5</option>
                   </select>
-                  <button type="submit" class="btn btn-dark">Rate</button>
+                  <button id = "submit_rate{{ result.book_id }}" type="submit" class="btn btn-dark" disabled>Rate</button>
                 </form>
               </td>
             </tr>

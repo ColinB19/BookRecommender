@@ -1,7 +1,7 @@
 from flask import render_template, request, flash, redirect, url_for
 from bookrecommender import app, db, bcrypt
 from bookrecommender.forms import RegistrationForm, LoginForm
-from bookrecommender.models import Book, User, UserRating
+from bookrecommender.models import Book, User, UserRating, UserRecommendations
 from flask_login import login_user, current_user, logout_user, login_required
 
 
@@ -99,17 +99,20 @@ def submit():
 def account():
     if current_user.is_authenticated:
         user_id = current_user.get_id()
-        bookratings = (db.session.query(Book, UserRating)
+        bookRatings = (db.session.query(Book, UserRating)
                     .filter(Book.book_id == UserRating.book_id)
-                    .filter(UserRating.site_id == user_id).all()
-                )  
-    return render_template("account.html", bookratings = bookratings)
+                    .filter(UserRating.site_id == user_id).order_by(Book.title).all()
+                )
+        bookRecommendations = (db.session.query(Book, UserRecommendations)
+                    .filter(Book.book_id == UserRecommendations.book_id)
+                    .filter(UserRecommendations.site_id == user_id).order_by(UserRecommendations.score).all()
+                )
+    return render_template("account.html", bookratings = bookRatings, bookRecommendations = bookRecommendations)
     # return render_template('account.html', ratings = books, title='Account')
 
 @app.route('/rate', methods=['POST'])
 def rate():
     rating = request.form["rating"]
-
     if current_user.is_authenticated:
         user_id = current_user.get_id()
     else:
@@ -137,3 +140,7 @@ def rate():
         db.session.commit()
 
     return redirect(url_for('account'))
+
+@app.route("/recommend")
+def recommend():
+    pass

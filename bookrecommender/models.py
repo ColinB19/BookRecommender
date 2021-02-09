@@ -71,3 +71,14 @@ class Book(db.Model):
 
     def __repr__(self):
         return f"Book('{self.title}', '{self.authors}')"
+
+class UserRecommendations(db.Model):
+    __tablename__ = "user_recs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False)
+    site_id=db.Column(db.Integer, nullable=False)
+    score = db.Column(db.Float, nullable=False)
+
+    def __repr__(self):
+        return f"UserRecommendations('{self.site_id}', '{self.book_id}', '{self.score}')"

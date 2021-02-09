@@ -2,44 +2,72 @@
 
 {% block body %}
 <div class="row justify-content-md-center">
-    <div class="col-sm-6 content-section">
-    <p class="lead text-center">Hi <strong>{{ current_user.username }}</strong>, here are some books you've read.</p>
-    <div class="table-wrapper">
-        <table class="table table-striped table-bordered text-black">
-          <thead>
-            <tr>
-              <th scope="col">Book Image</th>
-              <th scope="col">Title</th>
-              <th scope="col">Author(s)</th>
-              <th scope="col">Rating</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for br in bookratings %}
-                <tr id = "{{ br[0].book_id }}">
-                    <td><img src={{ br[0].image_url }} /></td>
-                    <td>{{ br[0].title }}</td>
-                    <td>{{ br[0].authors }}</td>
-                    <td>
-                        <div>You gave this book a {{br[1].rating}}.</div>
-                        <form action="{{ url_for('rate') }}" method="POST">
-                            <select name="rating" id="{{ br[0].book_id }}">
-                                <option selected value="--">--</option>
-                                <option value=1{{ br[0].book_id }}>1</option>
-                                <option value=2{{ br[0].book_id }}>2</option>
-                                <option value=3{{ br[0].book_id }}>3</option>
-                                <option value=4{{ br[0].book_id }}>4</option>
-                                <option value=5{{ br[0].book_id }}>5</option>
-                            </select>
-                            <button id = "submit_rate{{ br[0].book_id }}" type="submit" class="btn btn-dark" disabled>Rate</button>
-                        </form>
-                    </td>
+    <div class="col-sm-4 content-section">
+    {% if bookRecommendations %}
+        <p class="lead text-center">Hi <strong>{{ current_user.username }}</strong>, here are some books I recommend.</p>
+        <div class="table-wrapper">
+            <table class="table table-striped table-bordered text-black">
+                <thead>
+                <tr>
+                    <th scope="col">Book Image</th>
+                    <th scope="col">Title</th>
+                    <th scope="col">Author(s)</th>
                 </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                {% for br in bookRecommendations %}
+                    <tr id = "{{ br[0].book_id }}">
+                        <td><img src={{ br[0].image_url }} /></td>
+                        <td>{{ br[0].title }}</td>
+                        <td>{{ br[0].authors }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="lead text-center">Hi <strong>{{ current_user.username }}</strong>, looks like I don't have any recommendations for you yet, remember my engine trains every hour. While you wait you can rate some books you've previously read (remember the algorithm will only recommend you something if you've rated at least five books), check out the most popular books, or head over to some of my other sites!</p>
+    {% endif %}
     </div>
+    <div class="col-sm-4 content-section">
+        <p class="lead text-center">Here are some books you've read.</p>
+        <div class="table-wrapper">
+            <table class="table table-striped table-bordered text-black">
+            <thead>
+                <tr>
+                <th scope="col">Book Image</th>
+                <th scope="col">Title</th>
+                <th scope="col">Author(s)</th>
+                <th scope="col">Rating</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for br in bookratings %}
+                    <tr id = "{{ br[0].book_id }}">
+                        <td><img src={{ br[0].image_url }} /></td>
+                        <td>{{ br[0].title }}</td>
+                        <td>{{ br[0].authors }}</td>
+                        <td>
+                            <div>You gave this book a {{br[1].rating}}.</div>
+                            <form action="{{ url_for('rate') }}" method="POST">
+                                <select name="rating" id="{{ br[0].book_id }}">
+                                    <option selected value="--">--</option>
+                                    <option value=1{{ br[0].book_id }}>1</option>
+                                    <option value=2{{ br[0].book_id }}>2</option>
+                                    <option value=3{{ br[0].book_id }}>3</option>
+                                    <option value=4{{ br[0].book_id }}>4</option>
+                                    <option value=5{{ br[0].book_id }}>5</option>
+                                </select>
+                                <button id = "submit_rate{{ br[0].book_id }}" type="submit" class="btn btn-dark" disabled>Rate</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+
 
 {% endblock body %}

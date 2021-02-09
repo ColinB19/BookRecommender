@@ -64,9 +64,12 @@
   <div class="container-fluid text-center mt-2">
       {% block body %}{% endblock %}
   </div>
+  <br><br><br>
 
-  <footer class="container-fluid text-center">
-    <p>Footer Text</p>
+  <footer class="footer">
+    <div class = "container text-center text-muted">
+      Data provided by <a href = "https://www.goodreads.com/">goodreads</a>.
+    </div>
   </footer>
 
     <!-- Optional JavaScript -->
@@ -89,19 +92,6 @@
         });
       });
     </script>
-
-    <!-- <script type=text/javascript>
-      $(function() {
-        $('a#test').on('click', function(e) {
-          e.preventDefault()
-          $.getJSON('/background_process_test',
-              function(data) {
-            //do nothing
-          });
-          return false;
-        });
-      });
-    </script> -->
 
 </body>
 </html>

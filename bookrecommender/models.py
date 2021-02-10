@@ -3,8 +3,9 @@ Created on Wed Jan 27 20:46:04 2021
 
 @author: colin
 """
-from bookrecommender import login_manager, db
+from bookrecommender import login_manager, db, app
 from flask_login import UserMixin
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 
 
@@ -14,20 +15,33 @@ def load_user(user_id):
 
 
 class User(db.Model, UserMixin):
+    #this needs to go to UUID eventually. I just want to get it running for now.
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(20), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     reviews = db.relationship('UserRating', backref='reader', lazy=True)
 
+    def get_reset_token(self, expires_sec = 1800):
+        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_id':self.id}).decode('utf-8')
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        return User.query.get(user_id)
+
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
 
 
 class UserRating(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False)
-    site_id=db.Column(db.Integer, db.ForeignKey('user.id', ondelete="CASCADE"), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False, primary_key=True)
+    site_id=db.Column(db.Integer, db.ForeignKey('user.id', ondelete="CASCADE"), nullable=False, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
@@ -35,9 +49,8 @@ class UserRating(db.Model):
 
 
 class ArchiveRating(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False)
-    user_id=db.Column(db.Integer, nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False, primary_key=True)
+    user_id=db.Column(db.Integer, nullable=False, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
@@ -75,9 +88,8 @@ class Book(db.Model):
 class UserRecommendations(db.Model):
     __tablename__ = "user_recs"
 
-    id = db.Column(db.Integer, primary_key=True)
-    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False)
-    site_id=db.Column(db.Integer, nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.book_id', ondelete="CASCADE"), nullable=False, primary_key=True)
+    site_id=db.Column(db.Integer, db.ForeignKey('user.id', ondelete="CASCADE"), nullable=False, primary_key=True)
     score = db.Column(db.Float, nullable=False)
 
     def __repr__(self):

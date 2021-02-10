@@ -2,10 +2,10 @@
 
 {% block body %}
 <div class="row justify-content-md-center">
-    <div class="col-sm-3 content-section">
+    <div class="col-sm-2 content-section">
     <form method="post" action="">
         {{ form.hidden_tag() }}
-        <fieldset class="form-group">
+        <fieldset class="form-group text-left">
             <legend class="border-bottom mb-4">Sign up</legend>
             <div class="form-group">
                 {{ form.username.label(class="form-control-label") }}
@@ -62,7 +62,7 @@
                 {% endif %}
             </div>
         </fieldset>
-        <div class="form-group">
+        <div class="form-group text-left">
             {{ form.submit(class = "btn btn-outline-primary my-2 my-sm-0") }}
         </div>
     </form>

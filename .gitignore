@@ -2,3 +2,7 @@
 links.txt
 /goodbooks-10k/*
 /unused/*
+hyperparams.csv
+requirements.txt
+test.py
+

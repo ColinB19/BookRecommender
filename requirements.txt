@@ -1,5 +1,3 @@
-anaconda-client==1.7.2
-anaconda-navigator==1.9.12
 argon2-cffi @ file:///tmp/build/80754af9/argon2-cffi_1596828493937/work
 async-generator @ file:///home/ktietz/src/ci/async_generator_1611927993394/work
 attrs @ file:///tmp/build/80754af9/attrs_1604765588209/work

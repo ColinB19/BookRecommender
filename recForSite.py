@@ -6,6 +6,8 @@ from scipy.sparse import coo_matrix as cm
 import lightfm as lf
 import numpy as np
 
+#this needs to be updated for AWS
+
 db_un = os.environ.get("DB_USER")
 db_pw = os.environ.get("DB_PASS")
 

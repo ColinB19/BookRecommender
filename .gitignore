@@ -1,7 +1,9 @@
 */Data/*
-/links.txt
+links.txt
 /goodbooks-10k/*
 /unused/*
-/hyperparams.csv
-/test.py
-
+hyperparams.csv
+test.py
+/__pycache__/*
+/.vscode/*
+exploratory_analysis.ipynb

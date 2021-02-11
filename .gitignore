@@ -7,3 +7,4 @@ test.py
 /__pycache__/*
 /.vscode/*
 exploratory_analysis.ipynb
+.ipynb_checkpoints

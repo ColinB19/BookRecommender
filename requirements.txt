@@ -1,36 +1,36 @@
-bcrypt @ file:///home/conda/feedstock_root/build_artifacts/bcrypt_1602546548323/work
+bcrypt==3.2.0
 blinker==1.4
 brotlipy==0.7.0
 certifi==2020.12.5
-cffi @ file:///tmp/build/80754af9/cffi_1606255122322/work
-chardet @ file:///home/conda/feedstock_root/build_artifacts/chardet_1610093492116/work
+cffi==1.14.4
+chardet==4.0.0
 click==7.1.2
-cryptography @ file:///home/conda/feedstock_root/build_artifacts/cryptography_1612993732528/work
+cryptography==3.4.4
 dnspython==1.16.0
-email-validator @ file:///home/conda/feedstock_root/build_artifacts/email-validator-meta_1612647002066/work
+email-validator==1.1.2
 Flask==1.1.2
 Flask-Bcrypt==0.7.1
 Flask-Login==0.5.0
 Flask-Mail==0.9.1
-Flask-SQLAlchemy @ file:///home/conda/feedstock_root/build_artifacts/flask-sqlalchemy_1594747318500/work
+Flask-SQLAlchemy==2.4.4
 Flask-WTF==0.14.3
-idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1593328102638/work
+idna==2.10
 itsdangerous==1.1.0
 Jinja2==2.11.2
-lightfm @ file:///home/conda/feedstock_root/build_artifacts/lightfm_1612732136691/work
-MarkupSafe @ file:///tmp/build/80754af9/markupsafe_1607027305082/work
+lightfm==1.16
+MarkupSafe==1.1.1
 mkl-service==2.3.0
-numpy @ file:///home/conda/feedstock_root/build_artifacts/numpy_1612953006532/work
+numpy==1.20.1
 pandas==1.2.1
-pycparser @ file:///home/conda/feedstock_root/build_artifacts/pycparser_1593275161868/work
-pyOpenSSL @ file:///home/conda/feedstock_root/build_artifacts/pyopenssl_1608055815057/work
-PySocks @ file:///home/conda/feedstock_root/build_artifacts/pysocks_1610291451001/work
+pycparser==2.20
+pyOpenSSL==20.0.1
+PySocks==1.7.1
 python-dateutil==2.8.1
 pytz==2020.1
-requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1608156231189/work
-scipy @ file:///tmp/build/80754af9/scipy_1612469055309/work
-six @ file:///home/conda/feedstock_root/build_artifacts/six_1590081179328/work
-SQLAlchemy @ file:///tmp/build/80754af9/sqlalchemy_1612467452667/work
-urllib3 @ file:///home/conda/feedstock_root/build_artifacts/urllib3_1611695416663/work
+requests==2.25.1
+scipy==1.6.0
+six==1.15.0
+SQLAlchemy==1.3.23
+urllib3==1.26.3
 Werkzeug==1.0.1
-WTForms @ file:///home/conda/feedstock_root/build_artifacts/wtforms_1596060166590/work
+WTForms==2.3.2

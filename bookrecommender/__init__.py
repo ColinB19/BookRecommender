@@ -8,14 +8,27 @@ from flask_mail import Mail
 # initialize app and database configuations
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = 'e118b0dd389d8706291ead5d5d1b9932'
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db_un = os.environ.get("DB_USER")
-db_pw = os.environ.get("DB_PASS")
+LOCAL = False
+DEV = True
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+db_un+':'+db_pw+'@localhost/bookapp'
-app.config['DEBUG'] = True
+if DEV:
+    app.config['DEBUG'] = True
+
+if LOCAL:
+    DB_USERNAME = os.environ.get("DB_USER")
+    DB_PASSWORD = os.environ.get("DB_PASS")
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+DB_USERNAME+':'+DB_PASSWORD+'@localhost/bookapp'
+else: 
+    RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
+    RDS_PORT = os.environ.get("RDS_PORT")
+    RDS_DB_NAME = os.environ.get("RDS_DB_NAME")
+    RDS_USERNAME = os.environ.get("RDS_USERNAME")
+    RDS_PASSWORD = os.environ.get("RDS_PASSWORD")
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DB_NAME}"
+
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)

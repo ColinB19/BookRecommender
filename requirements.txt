@@ -1,3 +1,6 @@
+# this stack is too big for heroku. MKL is the big dog in this situation and I believe you need it for LightFM. Either
+# write your own alogirthms NOW or deploy to sagemaker.
+
 bcrypt==3.2.0
 blinker==1.4
 brotlipy==0.7.0
@@ -19,7 +22,7 @@ itsdangerous==1.1.0
 Jinja2==2.11.2
 lightfm==1.16
 MarkupSafe==1.1.1
-mkl
+mkl-service==2.3.0
 numpy==1.20.1
 pandas==1.2.1
 pycparser==2.20

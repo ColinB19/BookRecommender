@@ -19,7 +19,7 @@ itsdangerous==1.1.0
 Jinja2==2.11.2
 lightfm==1.16
 MarkupSafe==1.1.1
-mkl-service==2.3.0
+mkl
 numpy==1.20.1
 pandas==1.2.1
 pycparser==2.20

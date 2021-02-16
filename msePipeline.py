@@ -47,7 +47,8 @@ class MSEPipeline():
         engine = create_engine(
             f"postgresql://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DB_NAME}")
         with engine.connect() as connection:
-            self.archived_ratings = pd.read_sql_table('archive_rating', connection)
+            self.archived_ratings = pd.read_sql_table(
+                'archive_rating', connection)
             self.books = pd.read_sql_table('book', connection)
             self.user_ratings = pd.read_sql_table('user_rating', connection)
 
@@ -64,20 +65,23 @@ class MSEPipeline():
         ulist = self.user_ratings.site_id.unique().tolist()
         for i in range(len(ulist)):
             arcid = last_archived_user + i + 1
-            temp = {ulist[i]:arcid}
+            temp = {ulist[i]: arcid}
             self.user_archive_ids.update(temp)
 
-        self.user_ratings['user_id'] = self.user_ratings.site_id.map(self.user_archive_ids)
+        self.user_ratings['user_id'] = self.user_ratings.site_id.map(
+            self.user_archive_ids)
 
         # combine the ratings sets, change column names, fix typing
-        self.archived_ratings = self.archived_ratings.append(self.user_ratings[['user_id', 'book_id', 'rating']])
+        self.archived_ratings = self.archived_ratings.append(
+            self.user_ratings[['user_id', 'book_id', 'rating']])
 
     def commit_recommendations(self, recommendations):
 
         recommendations.iid = recommendations.iid + 1
         recommendations.uid = recommendations.uid + 1
-        recs = recommendations[recommendations.uid.isin(list(self.user_archive_ids.values()))]
-        mapping = {x:y for y,x in self.user_archive_ids.items()}
+        recs = recommendations[recommendations.uid.isin(
+            list(self.user_archive_ids.values()))]
+        mapping = {x: y for y, x in self.user_archive_ids.items()}
 
         RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
         RDS_PORT = os.environ.get("RDS_PORT")
@@ -94,8 +98,8 @@ class MSEPipeline():
                 sid = mapping[rec[1].uid]
                 score = rec[1].prediction
                 # just delete all the recommendations since we are making fresh ones now
-                connection.execute(f'INSERT INTO user_recs(book_id, site_id, score) VALUES ({iid}, {sid}, {score})')
-            
+                connection.execute(
+                    f'INSERT INTO user_recs(book_id, site_id, score) VALUES ({iid}, {sid}, {score})')
 
     def fix_ids(self):
         '''
@@ -192,6 +196,7 @@ class MSEPipeline():
 
         return train, test, validation
 
+
 def create_sparse_matrix(df, rows, cols, column_name="rating"):
     ''' 
     Creates a scipy sparse matrix
@@ -229,6 +234,7 @@ def create_embeddings(n, K, gamma=7):
 
     '''
     return gamma*np.random.rand(n, K) / K
+
 
 def predict(df, user_features, item_features):
     ''' 
@@ -275,11 +281,11 @@ def meanSquareError(df, user_features, item_features):
 
     '''
     # we need to actually make predictions then convert those into a sparse matrix
-    utility = create_sparse_matrix(df, user_features.shape[0], item_features.shape[0])
+    utility = create_sparse_matrix(
+        df, user_features.shape[0], item_features.shape[0])
     temp = predict(df=df, user_features=user_features,
                    item_features=item_features)
-    prediction = sparse.csc_matrix((temp.prediction.values, (temp.uid.values, temp.iid.values)),
-                                   shape=(user_features.shape[0], item_features.shape[0]))
+    prediction = create_sparse_matrix(temp, user_features.shape[0], item_features.shape[0], 'prediction')
 
     # now let's get an error matrix then return the MSE.
     error = utility-prediction
@@ -321,10 +327,12 @@ def gradient_reg(df, utility, user_features, item_features, lmbda_a, lmbda_b):
     # now let's get an error matrix
     error = utility-prediction
 
-    # we can now compute the gradient 
+    # we can now compute the gradient
     # we will compute each 'direction' separately and return them separately
-    grad_user = (-2/df.shape[0]) * (error*item_features) + 2*lmbda_a*user_features
-    grad_item = (-2/df.shape[0])*((error.T) * user_features) + 2*lmbda_b*item_features
+    grad_user = (-2/df.shape[0]) * \
+        (error*item_features) + 2*lmbda_a*user_features
+    grad_item = (-2/df.shape[0])*((error.T) *
+                                  user_features) + 2*lmbda_b*item_features
     return grad_user, grad_item
 
 
@@ -411,7 +419,7 @@ def gradient_descent(df,
         user_features = user_features - learning_rate*v_user
         item_features = item_features - learning_rate*v_item
 
-        # just print out values every so often to see what is happening 
+        # just print out values every so often to see what is happening
         # with the algo.
         if(not (i+1) % 50) and (updates):
             print("\niteration", i+1, ":")
@@ -425,7 +433,7 @@ def gradient_descent(df,
     mse_train = meanSquareError(df, user_features, item_features)
 
     # here we just check if the validation set is passed in so we can return the final cost of that as well if needed.
-    if val:
+    if val is not None:
         mse_val = meanSquareError(val, user_features, item_features)
         return user_features, item_features, mse_train, mse_val
     else:
@@ -462,8 +470,8 @@ class MSErec():
 
         '''
         # let's create a class dataframe object first
-        self.df=df
-        
+        self.df = df
+
         num_uid = len(df.uid.unique())
         num_iid = len(df.iid.unique())
 
@@ -474,8 +482,9 @@ class MSErec():
             self.test = create_sparse_matrix(test, num_uid, num_iid)
         else:
             self.test = None
-        if validation:
-            self.validation = create_sparse_matrix(validation, num_uid, num_iid)
+        if validation is not None:
+            self.validation = create_sparse_matrix(
+                validation, num_uid, num_iid)
         else:
             self.validation = None
 
@@ -497,25 +506,25 @@ class MSErec():
         num_iid = self.utility.shape[1]
         self.user_features = create_embeddings(num_uid, K=K, gamma=gamma)
         self.item_features = create_embeddings(num_iid, K=K, gamma=gamma)
-        
+
         # now perform GD, check if we passed a validation set as well.
         if self.validation is not None:
-            self.emb_user, self.emb_item, cost_train, cost_val = gradient_descent(df = self.df,
-                                                                              utility = self.utility,
-                                                                              user_features = self.user_features,
-                                                                              item_features = self.item_features,
-                                                                              epochs=epochs,
-                                                                              val = self.validation,
-                                                                              updates=False)
+            self.emb_user, self.emb_item, cost_train, cost_val = gradient_descent(df=self.df,
+                                                                                  utility=self.utility,
+                                                                                  user_features=self.user_features,
+                                                                                  item_features=self.item_features,
+                                                                                  epochs=epochs,
+                                                                                  val=self.validation,
+                                                                                  updates=False)
             return (cost_train, cost_val)
-    
+
         else:
-            self.emb_user, self.emb_item, cost_train = gradient_descent(df = self.df,
-                                                                      utility = self.utility,
-                                                                      user_features = self.user_features,
-                                                                      item_features = self.item_features,
-                                                                      epochs=epochs,
-                                                                      updates=False)
+            self.emb_user, self.emb_item, cost_train = gradient_descent(df=self.df,
+                                                                        utility=self.utility,
+                                                                        user_features=self.user_features,
+                                                                        item_features=self.item_features,
+                                                                        epochs=epochs,
+                                                                        updates=False)
             return (cost_train,)
 
     def paramSearch(self, num_samples=5):
@@ -537,18 +546,18 @@ class MSErec():
             # get a random sample of hyperparameters
             params = sample_hyperparameters()
             cost = self.trainModel(K=params["K"],
-                                   beta=params["beta"], 
-                                   epochs=params["epochs"], 
-                                   gamma=params["gamma"], 
+                                   beta=params["beta"],
+                                   epochs=params["epochs"],
+                                   gamma=params["gamma"],
                                    lr=params["lr"])
-            
-            params['train_mse'] = cost[0]   
-            if len(cost)==2:
+
+            params['train_mse'] = cost[0]
+            if len(cost) == 2:
                 params['val_mse'] = cost[1]
             hyperparams = hyperparams.append(params, ignore_index=True)
-            
+
         return hyperparams.sort_values(by='train_mse')
-    
+
     def getPredictions(self):
         ''' 
 
@@ -562,6 +571,6 @@ class MSErec():
         ----
 
         '''
-        self.df = predict(df = self.df, 
-                          user_features = self.user_features, 
-                          item_features = self.item_features)
+        self.df = predict(df=self.df,
+                          user_features=self.user_features,
+                          item_features=self.item_features)

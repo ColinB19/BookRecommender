@@ -178,7 +178,7 @@ def reset_request():
     user = User.query.filter_by(email = form.email.data).first()
     if user:
         send_reset_email(user)
-        flash('If an account associated with this email exists, an email will arive shortly.', 'info')
+        flash('If an account associated with this email exists, an email will arive shortly. Be sure to check your spam!', 'info')
         return redirect(url_for('login'))
     if (user is None) and (form.email.data):
         # this is just so we don't let a potential cybercriminal know that there is no user with this email.

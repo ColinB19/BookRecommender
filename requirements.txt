@@ -1,5 +1,4 @@
-# this stack is too big for heroku. MKL is the big dog in this situation and I believe you need it for LightFM. Either
-# write your own alogirthms NOW or deploy to sagemaker.
+# This is the requirements.txt for the Heroku site. Since I need the Heroku slug to be small, This doesnt contain every package needed to run every script in this repo. Check my environment.yml (not yet created) for that.
 
 bcrypt==3.2.0
 blinker==1.4

@@ -13,7 +13,6 @@ class MSEPipeline():
     '''
 
     def __init__(self):
-        self.books = pd.DataFrame()
         self.archived_ratings = pd.DataFrame()
         self.user_ratings = pd.DataFrame()
         self.user_archive_ids = {}
@@ -49,7 +48,6 @@ class MSEPipeline():
         with engine.connect() as connection:
             self.archived_ratings = pd.read_sql_table(
                 'archive_rating', connection)
-            self.books = pd.read_sql_table('book', connection)
             self.user_ratings = pd.read_sql_table('user_rating', connection)
 
     def remove_new_users(self):
@@ -75,31 +73,47 @@ class MSEPipeline():
         self.archived_ratings = self.archived_ratings.append(
             self.user_ratings[['user_id', 'book_id', 'rating']])
 
-    def commit_recommendations(self, recommendations):
+        # now we need to create a dataframe that will have every book for each user.
+        # We will use this in the prediction step, since our predict() method only
+        # works on book_id's that exist in the dataframe.
+        bookList = self.archived_ratings.book_id.unique().tolist()
+        userList = list(self.user_archive_ids.values())
+        dfList = []
+        for user in userList:
+            for book in bookList:
+                dfList.append([user,book, np.nan])
+        self.user_predictions = pd.DataFrame(dfList, columns=['user_id', 'book_id', 'prediction'])
 
-        recommendations.iid = recommendations.iid + 1
-        recommendations.uid = recommendations.uid + 1
-        recs = recommendations[recommendations.uid.isin(
-            list(self.user_archive_ids.values()))]
-        mapping = {x: y for y, x in self.user_archive_ids.items()}
+    def commit_recommendations(self):
+        try:
+            self.user_predictions.iid = self.user_predictions.iid + 1
+            self.user_predictions.uid = self.user_predictions.uid + 1
+            recs = self.user_predictions[self.user_predictions.uid.isin(
+                list(self.user_archive_ids.values()))]
+            mapping = {x: y for y, x in self.user_archive_ids.items()}
 
-        RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
-        RDS_PORT = os.environ.get("RDS_PORT")
-        RDS_DB_NAME = os.environ.get("RDS_DB_NAME")
-        RDS_USERNAME = os.environ.get("RDS_USERNAME")
-        RDS_PASSWORD = os.environ.get("RDS_PASSWORD")
+            RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
+            RDS_PORT = os.environ.get("RDS_PORT")
+            RDS_DB_NAME = os.environ.get("RDS_DB_NAME")
+            RDS_USERNAME = os.environ.get("RDS_USERNAME")
+            RDS_PASSWORD = os.environ.get("RDS_PASSWORD")
 
-        engine = create_engine(
-            f"postgresql://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DB_NAME}")
-        with engine.connect() as connection:
-            connection.execute('DELETE FROM user_recs')
-            for rec in recs.iterrows():
-                iid = int(rec[1].iid)
-                sid = mapping[rec[1].uid]
-                score = rec[1].prediction
-                # just delete all the recommendations since we are making fresh ones now
-                connection.execute(
-                    f'INSERT INTO user_recs(book_id, site_id, score) VALUES ({iid}, {sid}, {score})')
+            engine = create_engine(
+                f"postgresql://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DB_NAME}")
+            with engine.connect() as connection:
+                connection.execute('DELETE FROM user_recs')
+                for rec in recs.iterrows():
+                    iid = int(rec[1].iid)
+                    sid = mapping[rec[1].uid]
+                    score = rec[1].prediction
+                    user_books = self.user_ratings[self.user_ratings.site_id == sid].book_id.tolist()
+                    if iid not in user_books:
+                        connection.execute(
+                            f"INSERT INTO user_recs(book_id, site_id, score) VALUES ({iid}, {sid}, {score})")
+        except:
+            # FIXME This is bad practice. You should handle specific exceptions.
+            print("Something went wrong, maybe you called this method without providing predictions.")
+
 
     def fix_ids(self):
         '''
@@ -113,12 +127,14 @@ class MSEPipeline():
         # just changing to standard feature names
         self.archived_ratings.rename(
             columns={'user_id': 'uid', 'book_id': 'iid'}, inplace=True)
-        self.books.rename(columns={'book_id': 'iid'}, inplace=True)
+        self.user_predictions.rename(
+            columns={'user_id': 'uid', 'book_id': 'iid'}, inplace=True)
 
         # starting user and book indices from 0
         self.archived_ratings.uid = self.archived_ratings.uid - 1
         self.archived_ratings.iid = self.archived_ratings.iid - 1
-        self.books.iid = self.books.iid - 1
+        self.user_predictions.uid = self.user_predictions.uid - 1
+        self.user_predictions.iid = self.user_predictions.iid - 1
 
     def split_test_train(self,
                          testTrainFrac=0.5,
@@ -426,6 +442,7 @@ def gradient_descent(df,
             print("train mse:",  meanSquareError(
                 df, user_features, item_features))
             if val is not None:
+                # FIXME: This won't work. 
                 print("validation mse:",  meanSquareError(
                     val, user_features, item_features))
 
@@ -434,6 +451,7 @@ def gradient_descent(df,
 
     # here we just check if the validation set is passed in so we can return the final cost of that as well if needed.
     if val is not None:
+        # FIXME: This won't work. 
         mse_val = meanSquareError(val, user_features, item_features)
         return user_features, item_features, mse_train, mse_val
     else:
@@ -542,7 +560,7 @@ class MSErec():
         '''
         hyperparams = pd.DataFrame()
         print('Searching for optimal parameters...')
-        for i in tqdm(range(num_samples)):
+        for i in range(num_samples):
             # get a random sample of hyperparameters
             params = sample_hyperparameters()
             cost = self.trainModel(K=params["K"],
@@ -558,9 +576,10 @@ class MSErec():
 
         return hyperparams.sort_values(by='train_mse')
 
-    def getPredictions(self):
+    def getPredictions(self, df, num_predict = 10):
         ''' 
-
+        This is actually more complex than this. By just passing self.df, you're only getting predictions on items already read. 
+        What you need to do is get this to predict on each user. To achieve this, create a dataframe with all books for each new user!
         Parameters
         ----------
 
@@ -571,6 +590,14 @@ class MSErec():
         ----
 
         '''
-        self.df = predict(df=self.df,
-                          user_features=self.user_features,
-                          item_features=self.item_features)
+        totalPredictions = predict(df=df,
+                                    user_features=self.user_features,
+                                    item_features=self.item_features)
+        grouped = totalPredictions.groupby('uid')
+        truncatedPredictions = pd.DataFrame()
+        for group in grouped:
+            temp = group[1].sort_values(by='prediction', 
+                                        ascending=False)
+            truncatedPredictions = truncatedPredictions.append(temp.iloc[:num_predict])
+
+        return truncatedPredictions

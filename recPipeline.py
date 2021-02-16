@@ -14,7 +14,7 @@ from IPython.display import display, HTML
 # for progress bars
 from tqdm import tqdm
 
-class Pipeline():
+class LFpipeline():
 
     def __init__(self):
         self.books = pd.DataFrame()
@@ -194,7 +194,7 @@ class Pipeline():
 #         numItemFeatures = self.tags.book_id.max+1
 
 
-class Recommender():
+class LFrecommender():
     
     def __init__(self):
         self.model = lf.LightFM(loss = 'warp')

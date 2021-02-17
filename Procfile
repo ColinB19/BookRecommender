@@ -1,2 +1,2 @@
 web: gunicorn run:app
-clock: python recForSite.py
+clock: python clock.py

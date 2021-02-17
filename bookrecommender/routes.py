@@ -1,3 +1,15 @@
+"""
+author: Colin Bradley
+last updated: 02/17/2021
+
+
+TODO
+----
+1. Docstrings, comments, general cleanliness
+2. I want to provide a way of deleting recommendations
+3. I want to provide a way of deleting your account.
+"""
+
 from flask import render_template, request, flash, redirect, url_for
 from bookrecommender import app, db, bcrypt, mail
 from bookrecommender.forms import (RegistrationForm, LoginForm,

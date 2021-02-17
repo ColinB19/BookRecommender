@@ -1,3 +1,14 @@
+"""
+author: Colin Bradley
+last updated: 02/17/2021
+
+
+TODO
+----
+1. I'd like to create a config file which keeps all the settings.
+"""
+
+
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy

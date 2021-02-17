@@ -1,7 +1,11 @@
 """
-Created on Wed Jan 27 20:46:04 2021
+author: Colin Bradley
+last updated: 02/17/2021
 
-@author: colin
+
+TODO
+----
+1. Docstrings, comments, general cleanliness
 """
 from bookrecommender import login_manager, db, app
 from flask_login import UserMixin

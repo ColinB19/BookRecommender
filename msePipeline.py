@@ -1,3 +1,16 @@
+"""
+author: Colin Bradley
+last updated: 02/17/2021
+
+FIXME: Val step in SGD not working.
+
+TODO
+----
+1. Docstrings, comments, general cleanliness
+2. Still improving hyperparam optimization.
+3. Parallelize SGD
+"""
+
 import os
 import pandas as pd
 import numpy as np
@@ -12,10 +25,11 @@ class MSEPipeline():
     up test, train and validation sets.
     '''
 
-    def __init__(self):
+    def __init__(self, deploy=False):
         self.archived_ratings = pd.DataFrame()
         self.user_ratings = pd.DataFrame()
         self.user_archive_ids = {}
+        self.deploy = deploy
 
     def preprocess(self):
         '''
@@ -23,8 +37,9 @@ class MSEPipeline():
         include reading in the goodbooks-10k data, fixing some book id's and more.
         '''
         self.read_data()
-        self.remove_new_users()
-        self.add_users_to_archive()
+        if self.deploy:  # only add site users to df if we are deploying
+            self.remove_new_users()
+            self.add_users_to_archive()
         self.fix_ids()
 
     def read_data(self):
@@ -48,7 +63,9 @@ class MSEPipeline():
         with engine.connect() as connection:
             self.archived_ratings = pd.read_sql_table(
                 'archive_rating', connection)
-            self.user_ratings = pd.read_sql_table('user_rating', connection)
+            if self.deploy:  # only query site users if we are deploying
+                self.user_ratings = pd.read_sql_table(
+                    'user_rating', connection)
 
     def remove_new_users(self):
         # check if users have more than 5 reviews
@@ -81,8 +98,9 @@ class MSEPipeline():
         dfList = []
         for user in userList:
             for book in bookList:
-                dfList.append([user,book, np.nan])
-        self.user_predictions = pd.DataFrame(dfList, columns=['user_id', 'book_id', 'prediction'])
+                dfList.append([user, book, np.nan])
+        self.user_predictions = pd.DataFrame(
+            dfList, columns=['user_id', 'book_id', 'prediction'])
 
     def commit_recommendations(self):
         try:
@@ -106,14 +124,15 @@ class MSEPipeline():
                     iid = int(rec[1].iid)
                     sid = mapping[rec[1].uid]
                     score = rec[1].prediction
-                    user_books = self.user_ratings[self.user_ratings.site_id == sid].book_id.tolist()
+                    user_books = self.user_ratings[self.user_ratings.site_id == sid].book_id.tolist(
+                    )
                     if iid not in user_books:
                         connection.execute(
                             f"INSERT INTO user_recs(book_id, site_id, score) VALUES ({iid}, {sid}, {score})")
         except:
             # FIXME This is bad practice. You should handle specific exceptions.
-            print("Something went wrong, maybe you called this method without providing predictions.")
-
+            print(
+                "Something went wrong, maybe you called this method without providing predictions.")
 
     def fix_ids(self):
         '''
@@ -127,14 +146,17 @@ class MSEPipeline():
         # just changing to standard feature names
         self.archived_ratings.rename(
             columns={'user_id': 'uid', 'book_id': 'iid'}, inplace=True)
-        self.user_predictions.rename(
-            columns={'user_id': 'uid', 'book_id': 'iid'}, inplace=True)
 
         # starting user and book indices from 0
         self.archived_ratings.uid = self.archived_ratings.uid - 1
         self.archived_ratings.iid = self.archived_ratings.iid - 1
-        self.user_predictions.uid = self.user_predictions.uid - 1
-        self.user_predictions.iid = self.user_predictions.iid - 1
+
+        # do the same for user_predictions if we are deploying.
+        if self.deploy:
+            self.user_predictions.rename(
+                columns={'user_id': 'uid', 'book_id': 'iid'}, inplace=True)
+            self.user_predictions.uid = self.user_predictions.uid - 1
+            self.user_predictions.iid = self.user_predictions.iid - 1
 
     def split_test_train(self,
                          testTrainFrac=0.5,
@@ -301,7 +323,8 @@ def meanSquareError(df, user_features, item_features):
         df, user_features.shape[0], item_features.shape[0])
     temp = predict(df=df, user_features=user_features,
                    item_features=item_features)
-    prediction = create_sparse_matrix(temp, user_features.shape[0], item_features.shape[0], 'prediction')
+    prediction = create_sparse_matrix(
+        temp, user_features.shape[0], item_features.shape[0], 'prediction')
 
     # now let's get an error matrix then return the MSE.
     error = utility-prediction
@@ -362,7 +385,9 @@ def gradient_descent(df,
                      epochs=200,
                      learning_rate=0.05,
                      beta=0.9,
-                     updates=True):
+                     updates=True,
+                     dfError=None
+                    ):
     ''' 
     Performs gradient descent to find the optimal embedded matrices. A momentum term
     is added to arrive at the minimum sooner. This function will iterate a number of times
@@ -432,30 +457,36 @@ def gradient_descent(df,
         v_item = beta*v_item + (1-beta)*grad_item
 
         # update the embedded matrices
-        user_features = user_features - learning_rate*v_user
-        item_features = item_features - learning_rate*v_item
+#         user_features = user_features - learning_rate*v_user
+#         item_features = item_features - learning_rate*v_item
+        
+        user_features = user_features - learning_rate*grad_user
+        item_features = item_features - learning_rate*grad_item
 
-        # just print out values every so often to see what is happening
+        # just print out values every so often to see what is happening 
         # with the algo.
         if(not (i+1) % 50) and (updates):
             print("\niteration", i+1, ":")
             print("train mse:",  meanSquareError(
                 df, user_features, item_features))
             if val is not None:
-                # FIXME: This won't work. 
                 print("validation mse:",  meanSquareError(
                     val, user_features, item_features))
+        if dfError is not None:
+            dfError = dfError.append([[i, meanSquareError(df, user_features, item_features)]])
 
     # compute the final MSE
     mse_train = meanSquareError(df, user_features, item_features)
 
     # here we just check if the validation set is passed in so we can return the final cost of that as well if needed.
     if val is not None:
-        # FIXME: This won't work. 
         mse_val = meanSquareError(val, user_features, item_features)
-        return user_features, item_features, mse_train, mse_val
-    else:
-        return user_features, item_features, mse_train
+        if dfError is not None:
+                return (user_features, item_features, mse_train, mse_val, dfError)
+        return (user_features, item_features, mse_train, mse_val)
+    if dfError is not None: 
+        return (user_features, item_features, mse_train, dfError)
+    return (user_features, item_features, mse_train)
 
 
 def sample_hyperparameters():
@@ -506,7 +537,7 @@ class MSErec():
         else:
             self.validation = None
 
-    def trainModel(self, K=15, beta=0.90, epochs=60, gamma=14, lr=0.025):
+    def trainModel(self, K=25, epochs=155, gamma=20, lr=0.05):
         ''' 
 
         Parameters
@@ -518,6 +549,9 @@ class MSErec():
         TODO
         ----
 
+
+        NOTE: optimal K=25, epochs=155, gamma=20, lr=0.05. Still optimizing but this is ok for initial deployment
+        NOTE: I've removed momentum for now. Sloppy but I don't need it right now.
         '''
         # this initializes some embedding matrices
         num_uid = self.utility.shape[0]
@@ -570,13 +604,43 @@ class MSErec():
                                    lr=params["lr"])
 
             params['train_mse'] = cost[0]
+            # FIXME: This also won't work because of
+            # val step in trainModel(), len(cost) will
+            # never be 2
             if len(cost) == 2:
                 params['val_mse'] = cost[1]
             hyperparams = hyperparams.append(params, ignore_index=True)
 
         return hyperparams.sort_values(by='train_mse')
 
-    def getPredictions(self, df, num_predict = 10):
+    def gridSearch(self, dfParams):
+        K = 25
+        epochs=[200, 225, 250]
+        gamma = 20
+        lrs = [0.01, 0.05]
+        
+        for epoch in tqdm(epochs):
+            for lr in lrs:
+                dfError = pd.DataFrame()
+                # this initializes some embedding matrices
+                num_uid = self.utility.shape[0]
+                num_iid = self.utility.shape[1]
+                self.user_features = create_embeddings(num_uid, K=K, gamma=gamma)
+                self.item_features = create_embeddings(num_iid, K=K, gamma=gamma)
+                
+                self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df = self.df,
+                                                                            utility = self.utility,
+                                                                            user_features = self.user_features,
+                                                                            item_features = self.item_features,
+                                                                            epochs=epoch,
+                                                                            learning_rate = lr,
+                                                                            updates=False,
+                                                                            dfError=dfError)
+                dfParams = dfParams.append([[epoch, lr, cost_train]])
+                dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}.csv")
+        return dfParams  
+
+    def getPredictions(self, df, num_predict=10):
         ''' 
         This is actually more complex than this. By just passing self.df, you're only getting predictions on items already read. 
         What you need to do is get this to predict on each user. To achieve this, create a dataframe with all books for each new user!
@@ -591,13 +655,14 @@ class MSErec():
 
         '''
         totalPredictions = predict(df=df,
-                                    user_features=self.user_features,
-                                    item_features=self.item_features)
+                                   user_features=self.user_features,
+                                   item_features=self.item_features)
         grouped = totalPredictions.groupby('uid')
         truncatedPredictions = pd.DataFrame()
         for group in grouped:
-            temp = group[1].sort_values(by='prediction', 
+            temp = group[1].sort_values(by='prediction',
                                         ascending=False)
-            truncatedPredictions = truncatedPredictions.append(temp.iloc[:num_predict])
+            truncatedPredictions = truncatedPredictions.append(
+                temp.iloc[:num_predict])
 
         return truncatedPredictions

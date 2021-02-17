@@ -1,3 +1,14 @@
+"""
+author: Colin Bradley
+last updated: 02/17/2021
+
+TODO
+----
+1. Docstrings, comments, general cleanliness
+2. When you try to reset your password, the app SHOULD NOT tell someone whether
+or not a useername/password isn't in use.
+"""
+
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError

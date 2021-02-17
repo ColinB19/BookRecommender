@@ -12,15 +12,23 @@ TODO
 ----
 1. If the number of users grows too large the gradient descent might be too costly. You need a way to limit the total number of users when performing GD.
 """
-
+from apscheduler.schedulers.blocking import BlockingScheduler
 import msePipeline as mp
 
+sched = BlockingScheduler()
 
-pipeline = mp.MSEPipeline(deploy=True)
-pipeline.preprocess()
+@sched.scheduled_job('interval', minutes=60)
+def timed_job():
+    # pull in data and format it correctly
+    pipeline = mp.MSEPipeline(deploy=True)
+    pipeline.preprocess()
 
-model = mp.MSErec(df = pipeline.archived_ratings)
-model.trainModel()
-pipeline.user_predictions = model.getPredictions(pipeline.user_predictions)
+    # train a model and then predict for the site users
+    model = mp.MSErec(df = pipeline.archived_ratings)
+    model.trainModel()
+    pipeline.user_predictions = model.getPredictions(pipeline.user_predictions)
 
-pipeline.commit_recommendations()
+    # commit these recommendations to the RDS server
+    pipeline.commit_recommendations()
+
+sched.start()

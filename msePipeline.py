@@ -620,7 +620,7 @@ class MSErec():
         lrs = [0.025, 0.05,0.075]
         for k in Ks:
             for gamma in gammas:
-                for epoch in tqdm(epochs):
+                for epoch in epochs:
                     for lr in lrs:
                         dfError = pd.DataFrame()
                         # this initializes some embedding matrices

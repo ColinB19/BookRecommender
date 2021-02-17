@@ -17,7 +17,7 @@ import msePipeline as mp
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=60)
+@sched.timed_job('interval', minutes=60)
 def timed_job():
     # pull in data and format it correctly
     pipeline = mp.MSEPipeline(deploy=True)

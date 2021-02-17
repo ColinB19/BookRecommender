@@ -612,33 +612,61 @@ class MSErec():
             hyperparams = hyperparams.append(params, ignore_index=True)
 
         return hyperparams.sort_values(by='train_mse')
-
+    
     def gridSearch(self, dfParams):
-        K = 25
-        epochs=[200, 225, 250]
-        gamma = 20
-        lrs = [0.01, 0.05]
-        
-        for epoch in tqdm(epochs):
-            for lr in lrs:
-                dfError = pd.DataFrame()
-                # this initializes some embedding matrices
-                num_uid = self.utility.shape[0]
-                num_iid = self.utility.shape[1]
-                self.user_features = create_embeddings(num_uid, K=K, gamma=gamma)
-                self.item_features = create_embeddings(num_iid, K=K, gamma=gamma)
-                
-                self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df = self.df,
-                                                                            utility = self.utility,
-                                                                            user_features = self.user_features,
-                                                                            item_features = self.item_features,
-                                                                            epochs=epoch,
-                                                                            learning_rate = lr,
-                                                                            updates=False,
-                                                                            dfError=dfError)
-                dfParams = dfParams.append([[epoch, lr, cost_train]])
-                dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}.csv")
+        Ks = [20,25,30]
+        epochs=[100,125,150]
+        gammas = [15,20,25]
+        lrs = [0.025, 0.05,0.075]
+        for k in Ks:
+            for gamma in gammas:
+                for epoch in tqdm(epochs):
+                    for lr in lrs:
+                        dfError = pd.DataFrame()
+                        # this initializes some embedding matrices
+                        num_uid = self.utility.shape[0]
+                        num_iid = self.utility.shape[1]
+                        self.user_features = create_embeddings(num_uid, K=k, gamma=gamma)
+                        self.item_features = create_embeddings(num_iid, K=k, gamma=gamma)
+
+                        self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df = self.df,
+                                                                                    utility = self.utility,
+                                                                                    user_features = self.user_features,
+                                                                                    item_features = self.item_features,
+                                                                                    epochs=epoch,
+                                                                                    learning_rate = lr,
+                                                                                    updates=False,
+                                                                                    dfError=dfError)
+                    dfParams = dfParams.append([[epoch, lr, cost_train]])
+                dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}_K{k}_G{gamma}-{pd.to_datetime('today').strftime('%m-%d-%Y')}.csv")
         return dfParams  
+
+    # def gridSearch(self, dfParams):
+    #     K = 25
+    #     epochs=[200, 225, 250]
+    #     gamma = 20
+    #     lrs = [0.01, 0.05]
+        
+    #     for epoch in tqdm(epochs):
+    #         for lr in lrs:
+    #             dfError = pd.DataFrame()
+    #             # this initializes some embedding matrices
+    #             num_uid = self.utility.shape[0]
+    #             num_iid = self.utility.shape[1]
+    #             self.user_features = create_embeddings(num_uid, K=K, gamma=gamma)
+    #             self.item_features = create_embeddings(num_iid, K=K, gamma=gamma)
+                
+    #             self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df = self.df,
+    #                                                                         utility = self.utility,
+    #                                                                         user_features = self.user_features,
+    #                                                                         item_features = self.item_features,
+    #                                                                         epochs=epoch,
+    #                                                                         learning_rate = lr,
+    #                                                                         updates=False,
+    #                                                                         dfError=dfError)
+    #             dfParams = dfParams.append([[epoch, lr, cost_train]])
+    #             dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}.csv")
+    #     return dfParams  
 
     def getPredictions(self, df, num_predict=10):
         ''' 

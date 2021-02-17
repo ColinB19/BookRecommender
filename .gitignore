@@ -9,3 +9,4 @@ test.py
 exploratory_analysis.ipynb
 .ipynb_checkpoints
 /unused/.ipynb_checkpoints
+/AnalyzedData/*

@@ -151,25 +151,23 @@ def rate():
     newRating = UserRating(site_id = site_id, book_id = book_id, rating = book_rating)
 
     check = UserRating.query.filter_by(site_id = site_id, book_id = book_id).first()
+    print(check)
 
     if check is None:
+        print('Good to go!')
         # just insert the new book rating if they haven't already rated it.
         db.session.add(newRating)
         db.session.commit()
         return redirect(url_for('account'))
     else:
+        print('gotta delete first')
         # delete the old book rating then insert the new one!
         db.session.delete(check)
+        db.session.commit()
         db.session.add(newRating)
         db.session.commit()
 
     return redirect(url_for('account'))
-
-@app.route("/recommend")
-@login_required
-def recommend():
-    pass
-
 
 def send_reset_email(user):
     token = user.get_reset_token()

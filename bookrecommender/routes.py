@@ -135,7 +135,11 @@ def account():
                     .filter(Book.book_id == UserRecommendations.book_id)
                     .filter(UserRecommendations.site_id == user_id).order_by(UserRecommendations.score).all()
                 )
-    return render_template("account.html", bookratings = bookRatings, bookRecommendations = bookRecommendations, form = form)
+    return render_template("account.html",
+                            bookratings = bookRatings,
+                            bookRecommendations = bookRecommendations,
+                            form = form, 
+                            title = current_user.username)
     # return render_template('account.html', ratings = books, title='Account')
 
 @app.route('/rate', methods=['POST'])

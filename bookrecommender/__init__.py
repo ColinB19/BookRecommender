@@ -1,6 +1,6 @@
 """
 author: Colin Bradley
-last updated: 02/17/2021
+last updated: 02/18/2021
 
 
 TODO
@@ -22,17 +22,15 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-LOCAL = True
-DEV = True
+DEV = True # set to true for debug mode and local database
 
 if DEV:
     app.config['DEBUG'] = True
-
-if LOCAL:
     DB_USERNAME = os.environ.get("DB_USER")
     DB_PASSWORD = os.environ.get("DB_PASS")
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+DB_USERNAME+':'+DB_PASSWORD+'@localhost/bookapp'
 else: 
+    app.config['DEBUG'] = False
     RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
     RDS_PORT = os.environ.get("RDS_PORT")
     RDS_DB_NAME = os.environ.get("RDS_DB_NAME")

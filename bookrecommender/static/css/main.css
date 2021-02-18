@@ -31,11 +31,11 @@ table {
 .color-me{
     color:#ffff;
 }
-
+/* just makes nav transparent */
 .navbar-inner {
     background:transparent;
 }
-
+/* header and footer stuff */
 body{font-weight:300;-webkit-font-smoothing:antialiased}
 h2{text-align:center;font-weight:300}
 .btn-social-icon{margin-bottom:4px}

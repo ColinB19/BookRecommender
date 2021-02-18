@@ -637,8 +637,8 @@ class MSErec():
                                                                                     learning_rate = lr,
                                                                                     updates=False,
                                                                                     dfError=dfError)
-                    dfParams = dfParams.append([[epoch, lr, cost_train]])
-                dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}_K{k}_G{gamma}-{pd.to_datetime('today').strftime('%m-%d-%Y')}.csv")
+                        dfParams = dfParams.append([[k, gamma, epoch, lr, cost_train]])
+                        dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}_K{k}_G{gamma}-{pd.to_datetime('today').strftime('%m-%d-%Y')}.csv")
         return dfParams  
 
     # def gridSearch(self, dfParams):

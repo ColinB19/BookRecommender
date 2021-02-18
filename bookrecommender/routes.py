@@ -8,6 +8,8 @@ TODO
 1. Docstrings, comments, general cleanliness
 2. I want to provide a way of deleting recommendations
 3. I want to provide a way of deleting your account.
+4. I want to create an updates scroller on the home page
+that will inform users of the periodic updates the app gets.
 """
 
 from flask import render_template, request, flash, redirect, url_for

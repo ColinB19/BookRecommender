@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename = 'css/main.css')}}">
+    <link rel="stylesheet" href="{{ url_for('static', filename = 'css/boostrap-social.css')}}">
+    <link rel="stylesheet" href="{{ url_for('static', filename = 'css/font-awesome.css')}}">
 
     {% if title %}
         <title>Colin's Books - {{ title }}</title>
@@ -17,36 +19,47 @@
     {% endif %}
 </head>
 <body>
-
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item active">
-          <a class="nav-link" href="{{ url_for('index') }}">Home</a>
-        </li>
-        {% if current_user.is_authenticated %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('account') }}">Account</a>
+<div class=jumbotron>
+  <div class="container mb-4">
+    <h1 class ="display-2">The Book Spot</h1>
+    <p class="lead">
+      Data pulled from 
+      <a href = "https://www.goodreads.com/">goodreads</a> and the <a href="https://github.com/zygmuntz/goodbooks-10k">goodbooks-10k</a> dataset.
+    </p>
+    <a href="https://github.com/ColinB19/BookRecommender" class="btn btn-outline btn-lg"><span class="fa fa-github"></span> View on GitHub</a>
+    <a href="https://colinb19.github.io/" class="btn btn-outline btn-lg"><span class="fa fa-link"></span> Check out my blog</a>
+  </div>
+  <div class="bottom">
+    <nav class="navbar navbar-expand-lg navbar-inner">
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link color-me" href="{{ url_for('index') }}">Home</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
-          </li>
-        {% else %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-          </li>
-        {% endif %}
-      </ul>
-      <form class="form-inline my-2 my-lg-0" action="{{ url_for('submit') }}" method="POST">
-        <input class="form-control mr-sm-2" type="search" name="searchQuery" placeholder="Input book title or author" aria-label="Search">
-        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-      </form>
-    </div>
-  </nav>
-
+          {% if current_user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link color-me" href="{{ url_for('account') }}">Account</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link color-me" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link color-me" href="{{ url_for('login') }}">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link color-me" href="{{ url_for('register') }}">Register</a>
+            </li>
+          {% endif %}
+        </ul>
+        <form class="form-inline" action="{{ url_for('submit') }}" method="POST">
+          <input class="form-control mr-sm-2" type="search" name="searchQuery" placeholder="Input book title or author" aria-label="Search">
+          <button class="btn btn-outline-light my-2 my-sm-0" type="submit">Search</button>
+        </form>
+      </div>
+    </nav>
+  </div>
+</div>
 
   <div class="container-fluid text-center mt-2">
     <div class="row justify-content-md-center">
@@ -65,11 +78,19 @@
       {% block body %}{% endblock %}
   </div>
   <br><br><br>
-
+  <div class="container text-center">
+    <small class = "text-muted">
+      Header and footer largely influenced by <a href="https://github.com/lipis/bootstrap-social">lipis</a>
+    </small>
+  </div>
   <footer class="footer">
-    <div class = "container text-center text-muted">
-      Data provided by <a href = "https://www.goodreads.com/">goodreads</a>.
-    </div>
+    <ul class="links">
+      <li><a href="https://colinb19.github.io/"><span class="fa fa-link"></span> Data Motivated</a></li>
+      <li><a href="https://github.com/ColinB19"><span class="fa fa-github"></span> GitHub</a></li>
+      <li><a href="https://twitter.com/data_motivated"><span class="fa fa-twitter"></span> Twitter</a></li>
+      <li><a href="https://www.linkedin.com/in/colin-bradley-ab514a178/"><span class="fa fa-linkedin"></span> LinkedIn</a></li>
+    </ul>
+
   </footer>
 
     <!-- Optional JavaScript -->

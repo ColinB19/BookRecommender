@@ -12,26 +12,40 @@ TODO
 ----
 1. If the number of users grows too large the gradient descent might be too costly. You need a way to limit the total number of users when performing GD.
 """
+# from apscheduler.schedulers.blocking import BlockingScheduler
+
+# sched = BlockingScheduler()
+
+# @sched.scheduled_job('interval', minutes=60)
+# def timed_job():
+#     print("PRINTING A CHECK")
+#     # import msePipeline as mp
+#     # # pull in data and format it correctly
+#     # print('Establishing connection with RDS...')
+#     # pipeline = mp.MSEPipeline(deploy=True)
+#     # pipeline.preprocess()
+#     # print("Training a model...")
+#     # # train a model and then predict for the site users
+#     # model = mp.MSErec(df = pipeline.archived_ratings)
+#     # model.trainModel()
+#     # pipeline.user_predictions = model.getPredictions(pipeline.user_predictions)
+#     # print("Commiting recommendations...")
+#     # # commit these recommendations to the RDS server
+#     # pipeline.commit_recommendations()
+#     # print("Done!")
+
+# sched.start()
+
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=60)
+@sched.scheduled_job('interval', minutes=3)
 def timed_job():
-    print("PRINTING A CHECK")
-    # import msePipeline as mp
-    # # pull in data and format it correctly
-    # print('Establishing connection with RDS...')
-    # pipeline = mp.MSEPipeline(deploy=True)
-    # pipeline.preprocess()
-    # print("Training a model...")
-    # # train a model and then predict for the site users
-    # model = mp.MSErec(df = pipeline.archived_ratings)
-    # model.trainModel()
-    # pipeline.user_predictions = model.getPredictions(pipeline.user_predictions)
-    # print("Commiting recommendations...")
-    # # commit these recommendations to the RDS server
-    # pipeline.commit_recommendations()
-    # print("Done!")
+    print('This job is run every three minutes.')
+
+@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
+def scheduled_job():
+    print('This job is run every weekday at 5pm.')
 
 sched.start()

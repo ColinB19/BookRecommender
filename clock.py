@@ -13,12 +13,12 @@ TODO
 1. If the number of users grows too large the gradient descent might be too costly. You need a way to limit the total number of users when performing GD.
 """
 from apscheduler.schedulers.blocking import BlockingScheduler
-import msePipeline as mp
 
 sched = BlockingScheduler()
 
 @sched.scheduled_job('interval', minutes=60)
 def timed_job():
+    import msePipeline as mp
     # pull in data and format it correctly
     print('Establishing connection with RDS...')
     pipeline = mp.MSEPipeline(deploy=True)

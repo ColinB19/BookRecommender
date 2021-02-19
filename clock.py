@@ -40,9 +40,23 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=3)
+@sched.scheduled_job('interval', minutes=10)
 def timed_job():
     print('This job is run every three minutes.')
+    import msePipeline as mp
+    # pull in data and format it correctly
+    print('Establishing connection with RDS...')
+    pipeline = mp.MSEPipeline(deploy=True)
+    pipeline.preprocess()
+    print("Training a model...")
+    # train a model and then predict for the site users
+    # model = mp.MSErec(df = pipeline.archived_ratings)
+    # model.trainModel()
+    # pipeline.user_predictions = model.getPredictions(pipeline.user_predictions)
+    # print("Commiting recommendations...")
+    # # commit these recommendations to the RDS server
+    # pipeline.commit_recommendations()
+    # print("Done!")
 
 @sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def scheduled_job():

@@ -20,15 +20,17 @@ sched = BlockingScheduler()
 @sched.scheduled_job('interval', minutes=60)
 def timed_job():
     # pull in data and format it correctly
+    print('Establishing connection with RDS...')
     pipeline = mp.MSEPipeline(deploy=True)
     pipeline.preprocess()
-
+    print("Training a model...")
     # train a model and then predict for the site users
     model = mp.MSErec(df = pipeline.archived_ratings)
     model.trainModel()
     pipeline.user_predictions = model.getPredictions(pipeline.user_predictions)
-
+    print("Commiting recommendations...")
     # commit these recommendations to the RDS server
     pipeline.commit_recommendations()
+    print("Done!")
 
 sched.start()

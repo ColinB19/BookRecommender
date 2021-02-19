@@ -35,7 +35,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-DEV = True # set to true for debug mode and local database
+DEV = False # set to true for debug mode and local database
 
 if DEV:
     app.config['DEBUG'] = True

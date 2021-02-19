@@ -1,6 +1,6 @@
 """
 author: Colin Bradley
-last updated: 02/17/2021
+last updated: 02/18/2021
 
 
 TODO
@@ -10,6 +10,10 @@ TODO
 3. I want to provide a way of deleting your account.
 4. I want to create an updates scroller on the home page
 that will inform users of the periodic updates the app gets.
+5. I want to have functionality to allow users to input
+their goodreads username. Then the app can scrape their 
+profile for reviews and input them into my DB. That way they
+don't have to go and rate a bunch of books on my site
 """
 
 from flask import render_template, request, flash, redirect, url_for

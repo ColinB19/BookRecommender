@@ -9,6 +9,7 @@ TODO
 """
 from bookrecommender import login_manager, db, app
 from flask_login import UserMixin
+# this just sets a timer on the password reset link sent in an email
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 

@@ -9,6 +9,7 @@ TODO
 1. Docstrings, comments, general cleanliness
 2. Still improving hyperparam optimization.
 3. Parallelize SGD
+
 """
 
 import os

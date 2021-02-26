@@ -1,6 +1,6 @@
 """
 author: Colin Bradley
-last updated: 02/17/2021
+last updated: 02/23/2021
 
 The script reads in the data from an RDS server, creates sparse matrices, performs matrix factorization and then uploads recommendations
 to the RDS server to be read by the website.
@@ -12,30 +12,28 @@ TODO
 ----
 1. If the number of users grows too large the gradient descent might be too costly. You need a way to limit the total number of users when performing GD.
 """
-from apscheduler.schedulers.blocking import BlockingScheduler
+import imports
+import json
 
-sched = BlockingScheduler()
-
-@sched.scheduled_job('interval', minutes=10)
-def timed_job():
-    print('This job is run every three minutes.')
-    import msePipeline as mp
+def rec(event, context):
     # pull in data and format it correctly
     print('Establishing connection with RDS...')
-    pipeline = mp.MSEPipeline(deploy=True)
+    pipeline = imports.MSEPipeline(deploy=True)
     pipeline.preprocess()
     print("Training a model...")
     # train a model and then predict for the site users
-    model = mp.MSErec(df = pipeline.archived_ratings)
-    model.trainModel()
+    model = imports.MSErec(df = pipeline.archived_ratings)
+    cost = model.trainModel()
     pipeline.user_predictions = model.getPredictions(pipeline.user_predictions)
     print("Commiting recommendations...")
     # commit these recommendations to the RDS server
     pipeline.commit_recommendations()
     print("Done!")
+    val = {"model cost":cost[0]}
+    
+    
+    return {
+        "body": val,
+        "statusCode": 200
+    }
 
-@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
-def scheduled_job():
-    print('This job is run every weekday at 5pm.')
-
-sched.start()

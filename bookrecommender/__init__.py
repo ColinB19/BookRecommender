@@ -1,11 +1,14 @@
 """
 author: Colin Bradley
-last updated: 02/18/2021
+last updated: 02/23/2021
 
 
 TODO
 ----
 1. I'd like to create a config file which keeps all the settings.
+2. With AWS Lambda I can handle many requests at once! Thus I can add
+a recommend button so we don't have to batch update. I probably don't want 
+to do this for money purposes though.
 
 NOTE: I user a ping service from https://kaffeine.herokuapp.com/ to keep my site active at all times. Turn this off if you
 take the site down

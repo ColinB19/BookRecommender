@@ -1,6 +1,6 @@
 """
 author: Colin Bradley
-last updated: 02/17/2021
+last updated: 03/02/2021
 
 FIXME: Val step in SGD not working.
 
@@ -18,6 +18,13 @@ import numpy as np
 from sqlalchemy import create_engine
 from scipy import sparse
 
+# if you want to check memory put the following in the header
+# import psutil
+# BACKGROUND = dict(psutil.virtual_memory()._asdict())['used']/(10**6)
+# then put this where you want check.
+# L454 = dict(psutil.virtual_memory()._asdict())['used']/(10**6)
+# print(f"mem usage before iterations in GD {L454 - BACKGROUND}MB")
+
 
 class MSEPipeline():
     '''
@@ -27,8 +34,8 @@ class MSEPipeline():
     '''
 
     def __init__(self, deploy=False):
-        self.archived_ratings = pd.DataFrame()
-        self.user_ratings = pd.DataFrame()
+        self.archived_ratings = pd.DataFrame(dtype = np.int8)
+        self.user_ratings = pd.DataFrame(dtype = np.int8)
         self.user_archive_ids = {}
         self.deploy = deploy
 
@@ -62,11 +69,18 @@ class MSEPipeline():
         engine = create_engine(
             f"postgresql://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DB_NAME}")
         with engine.connect() as connection:
-            self.archived_ratings = pd.read_sql_table(
-                'archive_rating', connection)
+            temp1 = pd.read_sql_table(
+                'archive_rating', connection, chunksize=10000)
             if self.deploy:  # only query site users if we are deploying
-                self.user_ratings = pd.read_sql_table(
-                    'user_rating', connection)
+                temp2 = pd.read_sql_table(
+                    'user_rating', connection, chunksize=10000)
+        for chunk in temp1:
+            self.archived_ratings = self.archived_ratings.append(chunk)
+            amem = self.archived_ratings.memory_usage().sum()/(10**6)
+        if self.deploy:
+            for chunk in temp2:
+                self.user_ratings = self.user_ratings.append(chunk)
+                umem = self.user_ratings.memory_usage().sum()/(10**6)
 
     def remove_new_users(self):
         # check if users have more than 5 reviews
@@ -272,7 +286,7 @@ def create_embeddings(n, K, gamma=7):
     ----
 
     '''
-    return gamma*np.random.rand(n, K) / K
+    return (gamma*np.random.rand(n, K) / K).astype('float32')
 
 
 def predict(df, user_features, item_features):
@@ -295,8 +309,17 @@ def predict(df, user_features, item_features):
         The same dataframe as inputted but with a new/updated predictions column. 
 
     '''
+    pred = []
+    # print("predicting")
+    # # for row in tqdm(df.iterrows(),total = 500):
+    # #     pred.append(np.sum(np.multiply(
+    # #                         item_features[row[1].iid], 
+    # #                         user_features[row[1].uid], 
+    # #                         dtype=np.float32)))
+    # df['prediction'] = df.apply(lambda row: np.sum(np.multiply(item_features[row.iid], user_features[row.uid], dtype=np.float32)), axis=1)
+    # print("done")
     df['prediction'] = np.sum(np.multiply(
-        item_features[df['iid']], user_features[df['uid']]), axis=1)
+        item_features[df['iid']], user_features[df['uid']], dtype=np.float32), axis=1)
     return df
 
 
@@ -340,10 +363,7 @@ def gradient_reg(df, utility, user_features, item_features, lmbda_a, lmbda_b):
 
     Parameters
     ----------
-    df : pandas DataFrame
-        This is the pandas dataframe of the data predictions are to be made on.
-    utility : scipy sparse matrix
-        The sparse utility matrix of all of the ratings.
+    df : pandas DataFramehttps://stackoverflow.com/questions/52715916/numpy-huge-matrix-dot-product-while-multiprocessi
     user_features : numpy array
         The user feature embeddings.
     item_features : numpy Array
@@ -359,9 +379,12 @@ def gradient_reg(df, utility, user_features, item_features, lmbda_a, lmbda_b):
         gradient of the MSE, partial derivative w.r.t. the item 
 
     '''
+
     # we need to actually make predictions then convert those into a sparse matrix
     temp = predict(df=df, user_features=user_features,
                    item_features=item_features)
+
+
     prediction = sparse.csc_matrix((temp.prediction.values, (temp.uid.values, temp.iid.values)),
                                    shape=(user_features.shape[0], item_features.shape[0]))
     # now let's get an error matrix
@@ -442,10 +465,10 @@ def gradient_descent(df,
                                         item_features=item_features,
                                         lmbda_a=lmbda_a,
                                         lmbda_b=lmbda_b)
-    v_user = grad_user
-    v_item = grad_item
+
     for i in range(epochs):
         # update the gradient based on new feature matrices
+
         grad_user, grad_item = gradient_reg(df=df,
                                             utility=utility,
                                             user_features=user_features,
@@ -453,13 +476,6 @@ def gradient_descent(df,
                                             lmbda_a=lmbda_a,
                                             lmbda_b=lmbda_b)
 
-        # compute our update matrices
-        v_user = beta*v_user + (1-beta)*grad_user
-        v_item = beta*v_item + (1-beta)*grad_item
-
-        # update the embedded matrices
-#         user_features = user_features - learning_rate*v_user
-#         item_features = item_features - learning_rate*v_item
         
         user_features = user_features - learning_rate*grad_user
         item_features = item_features - learning_rate*grad_item
@@ -528,7 +544,7 @@ class MSErec():
         # create sparse matrices
         self.utility = create_sparse_matrix(df, num_uid, num_iid)
         # only create matrices for test and val if passed
-        if test:
+        if test is not None:
             self.test = create_sparse_matrix(test, num_uid, num_iid)
         else:
             self.test = None
@@ -688,10 +704,13 @@ class MSErec():
                                    item_features=self.item_features)
         grouped = totalPredictions.groupby('uid')
         truncatedPredictions = pd.DataFrame()
+        check = pd.DataFrame()
         for group in grouped:
             temp = group[1].sort_values(by='prediction',
                                         ascending=False)
             truncatedPredictions = truncatedPredictions.append(
                 temp.iloc[:num_predict])
-
+            check = check.append(
+                temp.iloc[-num_predict:])
+        print("standard: ", truncatedPredictions, "reverse: ", check, sep = '\n'*2)
         return truncatedPredictions

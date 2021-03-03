@@ -1,3 +1,12 @@
+"""
+author: Colin Bradley
+last updated: 03/02/2021
+
+This script is the lightFM version of the recommender system. It is deprecated.
+"""
+
+
+
 #standard stuff
 import numpy as np
 import pandas as pd

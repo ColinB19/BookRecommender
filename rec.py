@@ -24,7 +24,7 @@ def recBooks():
         print('Establishing connection with RDS...')
     else:
         print('Establishing connection with local postgres database...')
-    pipeline = mp.MSEPipeline(deploy=DEPLOY)
+    pipeline = mp.MSEPipeline(deploy=DEPLOY, ratingsThresh=4)
     pipeline.preprocess()
 
     print("Training a model...")

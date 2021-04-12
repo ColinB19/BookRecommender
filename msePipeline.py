@@ -1,6 +1,6 @@
 """
 author: Colin Bradley
-last updated: 03/02/2021
+last updated: 03/04/2021
 
 FIXME: Val step in SGD not working.
 
@@ -18,26 +18,26 @@ import numpy as np
 from sqlalchemy import create_engine
 from scipy import sparse
 
-# if you want to check memory put the following in the header
-# import psutil
-# BACKGROUND = dict(psutil.virtual_memory()._asdict())['used']/(10**6)
-# then put this where you want check.
-# L454 = dict(psutil.virtual_memory()._asdict())['used']/(10**6)
-# print(f"mem usage before iterations in GD {L454 - BACKGROUND}MB")
 
-
+#########################################################################
+############################### CLASSES #################################
+#########################################################################
 class MSEPipeline():
     '''
     This class is designed to pull book/user data and perform all the preprocessing necessary to trian
     a model. It will pull data from an RDS server, clean up column names and some labels, and split
     up test, train and validation sets.
+
+    TODO:
+    1) Make some functions in here private methods.
     '''
 
-    def __init__(self, deploy=False):
+    def __init__(self, deploy=False, ratingsThresh = 0):
         self.archived_ratings = pd.DataFrame(dtype = np.int8)
         self.user_ratings = pd.DataFrame(dtype = np.int8)
         self.user_archive_ids = {}
         self.deploy = deploy
+        self.ratingsThresh = ratingsThresh
 
     def preprocess(self):
         '''
@@ -45,6 +45,7 @@ class MSEPipeline():
         include reading in the goodbooks-10k data, fixing some book id's and more.
         '''
         self.read_data()
+        self.remove_ratings_below_thresh()
         if self.deploy:  # only add site users to df if we are deploying
             self.remove_new_users()
             self.add_users_to_archive()
@@ -57,32 +58,68 @@ class MSEPipeline():
         TODO
         ----
         1. Add functionality to pull from local database.
+            - FIXED 03/02/2021:17:35PST 
+        2. Add user functionality in local database.
         '''
 
         # the following lines set up SQL alchemy to grab data from my RDS database. You may need to adjust
-        # this to fit yours, or to do something locally.
-        RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
-        RDS_PORT = os.environ.get("RDS_PORT")
-        RDS_DB_NAME = os.environ.get("RDS_DB_NAME")
-        RDS_USERNAME = os.environ.get("RDS_USERNAME")
-        RDS_PASSWORD = os.environ.get("RDS_PASSWORD")
-        engine = create_engine(
-            f"postgresql://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DB_NAME}")
-        with engine.connect() as connection:
-            temp1 = pd.read_sql_table(
-                'archive_rating', connection, chunksize=10000)
-            if self.deploy:  # only query site users if we are deploying
+        # this to fit yours.
+
+        if self.deploy: # if we are running from RDS server
+            RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
+            RDS_PORT = os.environ.get("RDS_PORT")
+            RDS_DB_NAME = os.environ.get("RDS_DB_NAME")
+            RDS_USERNAME = os.environ.get("RDS_USERNAME")
+            RDS_PASSWORD = os.environ.get("RDS_PASSWORD")
+            engine = create_engine(
+                f"postgresql://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DB_NAME}")
+            # this reason for this chunksize structure is to not use too much RAM.
+            with engine.connect() as connection:
+                temp1 = pd.read_sql_table(
+                    'archive_rating', connection, chunksize=10000)
                 temp2 = pd.read_sql_table(
                     'user_rating', connection, chunksize=10000)
-        for chunk in temp1:
-            self.archived_ratings = self.archived_ratings.append(chunk)
-            amem = self.archived_ratings.memory_usage().sum()/(10**6)
-        if self.deploy:
+            # now just append to dataframes, uncomment the mem lines if you want to see
+            # how much memory the dataframes are taking.
+            for chunk in temp1:
+                self.archived_ratings = self.archived_ratings.append(chunk)
+                # amem = self.archived_ratings.memory_usage().sum()/(10**6)
             for chunk in temp2:
                 self.user_ratings = self.user_ratings.append(chunk)
-                umem = self.user_ratings.memory_usage().sum()/(10**6)
+                # umem = self.user_ratings.memory_usage().sum()/(10**6)
+        else: # if we are running locally
+            DB_USER = os.environ.get("DB_USER")
+            DB_PASS = os.environ.get("DB_PASS")
+            DB_NAME = os.environ.get("DB_NAME")
+            engine = create_engine(
+                f"postgresql://{DB_USER}:{DB_PASS}@localhost/{DB_NAME}")
+            # this reason for this chunksize structure is to not use too much RAM.
+            with engine.connect() as connection:
+                self.archived_ratings = pd.read_sql_table(
+                    'archive_rating', connection)
+                self.user_ratings = pd.read_sql_table(
+                    'user_rating', connection)
+
+    def remove_ratings_below_thresh(self):
+        """
+        Here we remove all the archived ratings that are below the given 
+        threshhold.
+        """
+        if self.ratingsThresh != 0:
+            # just keep archived ratings above the passed threshhold value
+            self.archived_ratings = self.archived_ratings.query(
+                'rating >= @self.ratingsThresh')
+            # reserialize the archive ID's so they are contiguous
+            temp_uids = reserialize_users(self.archived_ratings.user_id.unique().tolist())
+            self.archived_ratings.user_id = self.archived_ratings.user_id.map(temp_uids)
+            # note we don't actually care about the original archive ID's so we can just 
+            # leave them in this function.
 
     def remove_new_users(self):
+        '''
+        Here we dump the users with less than five ratings. The algorithm works
+        better the more ratings a user has made.
+        '''
         # check if users have more than 5 reviews
         grouped_users = self.user_ratings.groupby('site_id').count()
         # delete all users who don't
@@ -91,6 +128,12 @@ class MSEPipeline():
                 self.user_ratings = self.user_ratings[self.user_ratings['site_id'] != idx]
 
     def add_users_to_archive(self):
+        '''
+        Here we take our application users reviews (after they've been filtered for low-review
+        users) and tack them onto our existing table of archived ratings.
+        '''
+        # this first bit just adds an archive user ID to our users so
+        # they can be tacked onto the end of the archive user ratings.
         last_archived_user = self.archived_ratings.user_id.max()
         ulist = self.user_ratings.site_id.unique().tolist()
         for i in range(len(ulist)):
@@ -118,6 +161,10 @@ class MSEPipeline():
             dfList, columns=['user_id', 'book_id', 'prediction'])
 
     def commit_recommendations(self):
+        '''
+        Here we commit the recommendations to the database to be read on the app for users
+        to enjoy. For this to work you MUST MAKE PREDICTIONS 
+        '''
         try:
             self.user_predictions.iid = self.user_predictions.iid + 1
             self.user_predictions.uid = self.user_predictions.uid + 1
@@ -206,13 +253,20 @@ class MSEPipeline():
         TODO
         ----
         1. Create cross validation functionality where we can split the data into 3-5 sets.
+
+        FIXME: Splitting causes problems with numbers of books/users
         '''
         import random
         random.seed(1001)
 
         # only look at ratings above ratingsThresh
-        self.archived_ratings = self.archived_ratings.query(
-            'rating >= @ratingsThresh')
+        # FIXME: When you do this it removes users and messes with the user_ids,
+        # you have to rework id's in this case to serialize them
+        if ratingsThresh != 0:
+            self.archived_ratings = self.archived_ratings.query(
+                'rating >= @ratingsThresh')
+            temp_uids = reserialize_users(self.archived_ratings.uid.unique().tolist())
+            self.archived_ratings.uid = self.archived_ratings.uid.map(temp_uids)
 
         # let's get the list of users for the test set
         uids = self.archived_ratings.uid.unique().tolist()
@@ -248,6 +302,200 @@ class MSEPipeline():
             f"The number of books in the train set: {trainNumBooks}, test set: {testNumBooks}, val set: {valNumBooks}. The number of users in the train set: {trainNumUsers}, test set: {testNumUsers}, val set: {valNumUsers}.")
 
         return train, test, validation
+
+class MSErec():
+    '''
+    This class will perform all ML processes to predict books for users of our app. It will create 
+    user/item matrices, perform gradient descent (with momentum), and output predictions!
+    '''
+
+    def __init__(self, df, test=None, validation=None):
+        ''' 
+        Parameters
+        ----------
+        df : pandas DataFrame
+
+        Returns
+        -------
+
+        '''
+        # let's create a class dataframe object first
+        self.df = df
+
+        #FIXME: if you take out users (like splitting test and training) then the user id's and the length of the 
+        num_uid = len(df.uid.unique())
+        num_iid = len(df.iid.unique())
+
+        # create sparse matrices
+        self.utility = create_sparse_matrix(df, num_uid, num_iid)
+        # only create matrices for test and val if passed
+        if test is not None:
+            self.test = create_sparse_matrix(test, num_uid, num_iid)
+        else:
+            self.test = None
+        if validation is not None:
+            self.validation = create_sparse_matrix(
+                validation, num_uid, num_iid)
+        else:
+            self.validation = None
+
+    def trainModel(self, K=25, epochs=155, gamma=20, lr=0.05):
+        ''' 
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        TODO
+        ----
+
+
+        NOTE: optimal K=25, epochs=155, gamma=20, lr=0.05. Still optimizing but this is ok for initial deployment
+        NOTE: I've removed momentum for now. Sloppy but I don't need it right now.
+        '''
+        # this initializes some embedding matrices
+        num_uid = self.utility.shape[0]
+        num_iid = self.utility.shape[1]
+        self.user_features = create_embeddings(num_uid, K=K, gamma=gamma)
+        self.item_features = create_embeddings(num_iid, K=K, gamma=gamma)
+
+        # now perform GD, check if we passed a validation set as well.
+        if self.validation is not None:
+            self.emb_user, self.emb_item, cost_train, cost_val = gradient_descent(df=self.df,
+                                                                                  utility=self.utility,
+                                                                                  user_features=self.user_features,
+                                                                                  item_features=self.item_features,
+                                                                                  epochs=epochs,
+                                                                                  val=self.validation,
+                                                                                  updates=False)
+            return (cost_train, cost_val)
+
+        else:
+            self.emb_user, self.emb_item, cost_train = gradient_descent(df=self.df,
+                                                                        utility=self.utility,
+                                                                        user_features=self.user_features,
+                                                                        item_features=self.item_features,
+                                                                        epochs=epochs,
+                                                                        updates=False)
+            return (cost_train,)
+
+    def paramSearch(self, num_samples=5):
+        ''' 
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        TODO
+        ----
+
+        '''
+        hyperparams = pd.DataFrame()
+        print('Searching for optimal parameters...')
+        for i in range(num_samples):
+            # get a random sample of hyperparameters
+            params = sample_hyperparameters()
+            cost = self.trainModel(K=params["K"],
+                                   beta=params["beta"],
+                                   epochs=params["epochs"],
+                                   gamma=params["gamma"],
+                                   lr=params["lr"])
+
+            params['train_mse'] = cost[0]
+            # FIXME: This also won't work because of
+            # val step in trainModel(), len(cost) will
+            # never be 2
+            if len(cost) == 2:
+                params['val_mse'] = cost[1]
+            hyperparams = hyperparams.append(params, ignore_index=True)
+
+        return hyperparams.sort_values(by='train_mse')
+    
+    def gridSearch(self, dfParams):
+        Ks = [20,25,30]
+        epochs=[100,125,150]
+        gammas = [15,20,25]
+        lrs = [0.025, 0.05,0.075]
+        for k in Ks:
+            for gamma in gammas:
+                for epoch in epochs:
+                    for lr in lrs:
+                        dfError = pd.DataFrame()
+                        # this initializes some embedding matrices
+                        num_uid = self.utility.shape[0]
+                        num_iid = self.utility.shape[1]
+                        self.user_features = create_embeddings(num_uid, K=k, gamma=gamma)
+                        self.item_features = create_embeddings(num_iid, K=k, gamma=gamma)
+
+                        self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df = self.df,
+                                                                                    utility = self.utility,
+                                                                                    user_features = self.user_features,
+                                                                                    item_features = self.item_features,
+                                                                                    epochs=epoch,
+                                                                                    learning_rate = lr,
+                                                                                    updates=False,
+                                                                                    dfError=dfError)
+                        dfParams = dfParams.append([[k, gamma, epoch, lr, cost_train]])
+                        dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}_K{k}_G{gamma}-{pd.to_datetime('today').strftime('%m-%d-%Y')}.csv")
+        return dfParams  
+
+
+    def getPredictions(self, df, num_predict=10):
+        ''' 
+        This is actually more complex than this. By just passing self.df, you're only getting predictions on items already read. 
+        What you need to do is get this to predict on each user. To achieve this, create a dataframe with all books for each new user!
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        TODO
+        ----
+        1. Fix this so it works for local DB's as well. 
+            - NOTE: I'm not actually sure this is where the problem is. Probably more in commit_recommendations() under msePipeline().
+        '''
+        totalPredictions = predict(df=df,
+                                   user_features=self.user_features,
+                                   item_features=self.item_features)
+        grouped = totalPredictions.groupby('uid')
+        truncatedPredictions = pd.DataFrame()
+        check = pd.DataFrame()
+        for group in grouped:
+            temp = group[1].sort_values(by='prediction',
+                                        ascending=False)
+            truncatedPredictions = truncatedPredictions.append(
+                temp.iloc[:num_predict])
+            check = check.append(
+                temp.iloc[-num_predict:])
+        print("standard: ", truncatedPredictions, "reverse: ", check, sep = '\n'*2)
+        return truncatedPredictions
+
+#########################################################################
+############################## FUNCTIONS ################################
+#########################################################################
+
+def reserialize_users(uids):
+    '''
+    If you only consider ratings above a certain number you then lose some users.
+    Creating a sparse matrix only works with contiguous user id's, so we have to reserialize
+    the uid's. This function does that.
+    Parameters
+    ----------
+    uids: list
+        A list of the non-contiguous uids
+
+    Returns
+    -------
+    mapping: dictionary
+        a mapping between the newly contiguous list of uids and the old list
+    '''
+    mapping = {uids[i-1]:i for i in range(1, len(uids)+1)}
+    return mapping
 
 
 def create_sparse_matrix(df, rows, cols, column_name="rating"):
@@ -517,200 +765,3 @@ def sample_hyperparameters():
         "gamma": np.random.randint(5, 15),
         "epochs": np.random.randint(50, 80)
     }
-
-
-class MSErec():
-    '''
-    This class will perform all ML processes to predict books for users of our app. It will create 
-    user/item matrices, perform gradient descent (with momentum), and output predictions!
-    '''
-
-    def __init__(self, df, test=None, validation=None):
-        ''' 
-        Parameters
-        ----------
-        df : pandas DataFrame
-
-        Returns
-        -------
-
-        '''
-        # let's create a class dataframe object first
-        self.df = df
-
-        num_uid = len(df.uid.unique())
-        num_iid = len(df.iid.unique())
-
-        # create sparse matrices
-        self.utility = create_sparse_matrix(df, num_uid, num_iid)
-        # only create matrices for test and val if passed
-        if test is not None:
-            self.test = create_sparse_matrix(test, num_uid, num_iid)
-        else:
-            self.test = None
-        if validation is not None:
-            self.validation = create_sparse_matrix(
-                validation, num_uid, num_iid)
-        else:
-            self.validation = None
-
-    def trainModel(self, K=25, epochs=155, gamma=20, lr=0.05):
-        ''' 
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        TODO
-        ----
-
-
-        NOTE: optimal K=25, epochs=155, gamma=20, lr=0.05. Still optimizing but this is ok for initial deployment
-        NOTE: I've removed momentum for now. Sloppy but I don't need it right now.
-        '''
-        # this initializes some embedding matrices
-        num_uid = self.utility.shape[0]
-        num_iid = self.utility.shape[1]
-        self.user_features = create_embeddings(num_uid, K=K, gamma=gamma)
-        self.item_features = create_embeddings(num_iid, K=K, gamma=gamma)
-
-        # now perform GD, check if we passed a validation set as well.
-        if self.validation is not None:
-            self.emb_user, self.emb_item, cost_train, cost_val = gradient_descent(df=self.df,
-                                                                                  utility=self.utility,
-                                                                                  user_features=self.user_features,
-                                                                                  item_features=self.item_features,
-                                                                                  epochs=epochs,
-                                                                                  val=self.validation,
-                                                                                  updates=False)
-            return (cost_train, cost_val)
-
-        else:
-            self.emb_user, self.emb_item, cost_train = gradient_descent(df=self.df,
-                                                                        utility=self.utility,
-                                                                        user_features=self.user_features,
-                                                                        item_features=self.item_features,
-                                                                        epochs=epochs,
-                                                                        updates=False)
-            return (cost_train,)
-
-    def paramSearch(self, num_samples=5):
-        ''' 
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        TODO
-        ----
-
-        '''
-        hyperparams = pd.DataFrame()
-        print('Searching for optimal parameters...')
-        for i in range(num_samples):
-            # get a random sample of hyperparameters
-            params = sample_hyperparameters()
-            cost = self.trainModel(K=params["K"],
-                                   beta=params["beta"],
-                                   epochs=params["epochs"],
-                                   gamma=params["gamma"],
-                                   lr=params["lr"])
-
-            params['train_mse'] = cost[0]
-            # FIXME: This also won't work because of
-            # val step in trainModel(), len(cost) will
-            # never be 2
-            if len(cost) == 2:
-                params['val_mse'] = cost[1]
-            hyperparams = hyperparams.append(params, ignore_index=True)
-
-        return hyperparams.sort_values(by='train_mse')
-    
-    def gridSearch(self, dfParams):
-        Ks = [20,25,30]
-        epochs=[100,125,150]
-        gammas = [15,20,25]
-        lrs = [0.025, 0.05,0.075]
-        for k in Ks:
-            for gamma in gammas:
-                for epoch in epochs:
-                    for lr in lrs:
-                        dfError = pd.DataFrame()
-                        # this initializes some embedding matrices
-                        num_uid = self.utility.shape[0]
-                        num_iid = self.utility.shape[1]
-                        self.user_features = create_embeddings(num_uid, K=k, gamma=gamma)
-                        self.item_features = create_embeddings(num_iid, K=k, gamma=gamma)
-
-                        self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df = self.df,
-                                                                                    utility = self.utility,
-                                                                                    user_features = self.user_features,
-                                                                                    item_features = self.item_features,
-                                                                                    epochs=epoch,
-                                                                                    learning_rate = lr,
-                                                                                    updates=False,
-                                                                                    dfError=dfError)
-                        dfParams = dfParams.append([[k, gamma, epoch, lr, cost_train]])
-                        dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}_K{k}_G{gamma}-{pd.to_datetime('today').strftime('%m-%d-%Y')}.csv")
-        return dfParams  
-
-    # def gridSearch(self, dfParams):
-    #     K = 25
-    #     epochs=[200, 225, 250]
-    #     gamma = 20
-    #     lrs = [0.01, 0.05]
-        
-    #     for epoch in tqdm(epochs):
-    #         for lr in lrs:
-    #             dfError = pd.DataFrame()
-    #             # this initializes some embedding matrices
-    #             num_uid = self.utility.shape[0]
-    #             num_iid = self.utility.shape[1]
-    #             self.user_features = create_embeddings(num_uid, K=K, gamma=gamma)
-    #             self.item_features = create_embeddings(num_iid, K=K, gamma=gamma)
-                
-    #             self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df = self.df,
-    #                                                                         utility = self.utility,
-    #                                                                         user_features = self.user_features,
-    #                                                                         item_features = self.item_features,
-    #                                                                         epochs=epoch,
-    #                                                                         learning_rate = lr,
-    #                                                                         updates=False,
-    #                                                                         dfError=dfError)
-    #             dfParams = dfParams.append([[epoch, lr, cost_train]])
-    #             dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}.csv")
-    #     return dfParams  
-
-    def getPredictions(self, df, num_predict=10):
-        ''' 
-        This is actually more complex than this. By just passing self.df, you're only getting predictions on items already read. 
-        What you need to do is get this to predict on each user. To achieve this, create a dataframe with all books for each new user!
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        TODO
-        ----
-
-        '''
-        totalPredictions = predict(df=df,
-                                   user_features=self.user_features,
-                                   item_features=self.item_features)
-        grouped = totalPredictions.groupby('uid')
-        truncatedPredictions = pd.DataFrame()
-        check = pd.DataFrame()
-        for group in grouped:
-            temp = group[1].sort_values(by='prediction',
-                                        ascending=False)
-            truncatedPredictions = truncatedPredictions.append(
-                temp.iloc[:num_predict])
-            check = check.append(
-                temp.iloc[-num_predict:])
-        print("standard: ", truncatedPredictions, "reverse: ", check, sep = '\n'*2)
-        return truncatedPredictions

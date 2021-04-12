@@ -44,7 +44,8 @@ if DEV:
     app.config['DEBUG'] = True
     DB_USERNAME = os.environ.get("DB_USER")
     DB_PASSWORD = os.environ.get("DB_PASS")
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+DB_USERNAME+':'+DB_PASSWORD+'@localhost/bookapp'
+    DB_NAME = os.environ.get("DB_NAME")
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://'+DB_USERNAME+':'+DB_PASSWORD+'@localhost/{DB_NAME}'
 else: 
     app.config['DEBUG'] = False
     RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")

@@ -32,9 +32,9 @@ class MSEPipeline():
     1) Make some functions in here private methods.
     '''
 
-    def __init__(self, deploy=False, ratingsThresh = 0):
-        self.archived_ratings = pd.DataFrame(dtype = np.int8)
-        self.user_ratings = pd.DataFrame(dtype = np.int8)
+    def __init__(self, deploy=False, ratingsThresh=0):
+        self.archived_ratings = pd.DataFrame(dtype=np.int8)
+        self.user_ratings = pd.DataFrame(dtype=np.int8)
         self.user_archive_ids = {}
         self.deploy = deploy
         self.ratingsThresh = ratingsThresh
@@ -65,7 +65,7 @@ class MSEPipeline():
         # the following lines set up SQL alchemy to grab data from my RDS database. You may need to adjust
         # this to fit yours.
 
-        if self.deploy: # if we are running from RDS server
+        if self.deploy:  # if we are running from RDS server
             RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
             RDS_PORT = os.environ.get("RDS_PORT")
             RDS_DB_NAME = os.environ.get("RDS_DB_NAME")
@@ -87,7 +87,7 @@ class MSEPipeline():
             for chunk in temp2:
                 self.user_ratings = self.user_ratings.append(chunk)
                 # umem = self.user_ratings.memory_usage().sum()/(10**6)
-        else: # if we are running locally
+        else:  # if we are running locally
             DB_USER = os.environ.get("DB_USER")
             DB_PASS = os.environ.get("DB_PASS")
             DB_NAME = os.environ.get("DB_NAME")
@@ -110,9 +110,11 @@ class MSEPipeline():
             self.archived_ratings = self.archived_ratings.query(
                 'rating >= @self.ratingsThresh')
             # reserialize the archive ID's so they are contiguous
-            temp_uids = reserialize_users(self.archived_ratings.user_id.unique().tolist())
-            self.archived_ratings.user_id = self.archived_ratings.user_id.map(temp_uids)
-            # note we don't actually care about the original archive ID's so we can just 
+            temp_uids = reserialize_users(
+                self.archived_ratings.user_id.unique().tolist())
+            self.archived_ratings.user_id = self.archived_ratings.user_id.map(
+                temp_uids)
+            # note we don't actually care about the original archive ID's so we can just
             # leave them in this function.
 
     def remove_new_users(self):
@@ -289,6 +291,7 @@ class MSEPipeline():
 
         return train, test, validation
 
+
 class MSErec():
     '''
     This class will perform all ML processes to predict books for users of our app. It will create 
@@ -308,7 +311,7 @@ class MSErec():
         # let's create a class dataframe object first
         self.df = df
 
-        #FIXME: if you take out users (like splitting test and training) then the user id's and the length of the 
+        # FIXME: if you take out users (like splitting test and training) then the user id's and the length of the
         num_uid = len(df.uid.unique())
         num_iid = len(df.iid.unique())
 
@@ -400,12 +403,12 @@ class MSErec():
             hyperparams = hyperparams.append(params, ignore_index=True)
 
         return hyperparams.sort_values(by='train_mse')
-    
+
     def gridSearch(self, dfParams):
-        Ks = [20,25,30]
-        epochs=[100,125,150]
-        gammas = [15,20,25]
-        lrs = [0.025, 0.05,0.075]
+        Ks = [20, 25, 30]
+        epochs = [100, 125, 150]
+        gammas = [15, 20, 25]
+        lrs = [0.025, 0.05, 0.075]
         for k in Ks:
             for gamma in gammas:
                 for epoch in epochs:
@@ -414,21 +417,24 @@ class MSErec():
                         # this initializes some embedding matrices
                         num_uid = self.utility.shape[0]
                         num_iid = self.utility.shape[1]
-                        self.user_features = create_embeddings(num_uid, K=k, gamma=gamma)
-                        self.item_features = create_embeddings(num_iid, K=k, gamma=gamma)
+                        self.user_features = create_embeddings(
+                            num_uid, K=k, gamma=gamma)
+                        self.item_features = create_embeddings(
+                            num_iid, K=k, gamma=gamma)
 
-                        self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df = self.df,
-                                                                                    utility = self.utility,
-                                                                                    user_features = self.user_features,
-                                                                                    item_features = self.item_features,
-                                                                                    epochs=epoch,
-                                                                                    learning_rate = lr,
-                                                                                    updates=False,
-                                                                                    dfError=dfError)
-                        dfParams = dfParams.append([[k, gamma, epoch, lr, cost_train]])
-                        dfError.to_csv(f"AnalyzedData/error_E{epoch}_L{lr}_K{k}_G{gamma}-{pd.to_datetime('today').strftime('%m-%d-%Y')}.csv")
-        return dfParams  
-
+                        self.emb_user, self.emb_item, cost_train, dfError = gradient_descent(df=self.df,
+                                                                                             utility=self.utility,
+                                                                                             user_features=self.user_features,
+                                                                                             item_features=self.item_features,
+                                                                                             epochs=epoch,
+                                                                                             learning_rate=lr,
+                                                                                             updates=False,
+                                                                                             dfError=dfError)
+                        dfParams = dfParams.append(
+                            [[k, gamma, epoch, lr, cost_train]])
+                        dfError.to_csv(
+                            f"AnalyzedData/error_E{epoch}_L{lr}_K{k}_G{gamma}-{pd.to_datetime('today').strftime('%m-%d-%Y')}.csv")
+        return dfParams
 
     def getPredictions(self, df, num_predict=10):
         ''' 
@@ -458,12 +464,14 @@ class MSErec():
                 temp.iloc[:num_predict])
             check = check.append(
                 temp.iloc[-num_predict:])
-        print("standard: ", truncatedPredictions, "reverse: ", check, sep = '\n'*2)
+        print("standard: ", truncatedPredictions,
+              "reverse: ", check, sep='\n'*2)
         return truncatedPredictions
 
 #########################################################################
 ############################## FUNCTIONS ################################
 #########################################################################
+
 
 def reserialize_users(uids):
     '''
@@ -480,7 +488,7 @@ def reserialize_users(uids):
     mapping: dictionary
         a mapping between the newly contiguous list of uids and the old list
     '''
-    mapping = {uids[i-1]:i for i in range(1, len(uids)+1)}
+    mapping = {uids[i-1]: i for i in range(1, len(uids)+1)}
     return mapping
 
 
@@ -495,11 +503,12 @@ def create_sparse_matrix(df, rows, cols, column_name="rating"):
         number of rows in the matrix
     columns : int
         number of columns in the matrix
-    column_name : 
+    column_name : str, optional
+        name of ratings column. This should always be "rating"
 
     Returns
     -------
-
+    ___ : scipy sparse matrix
     TODO
     ----
 
@@ -509,13 +518,20 @@ def create_sparse_matrix(df, rows, cols, column_name="rating"):
 
 def create_embeddings(n, K, gamma=7):
     ''' 
+    Initializes n x K feature matrices 
 
     Parameters
     ----------
-
+    n : int
+        number of items/users
+    K : int
+        number of latent factors, to be tuned
+    gamma : float, optional
+        scaling of intial feature weights, to be tuned
     Returns
     -------
-
+    ___ : numpy matrix
+        a randomly initialized feature matrix
     TODO
     ----
 
@@ -543,15 +559,6 @@ def predict(df, user_features, item_features):
         The same dataframe as inputted but with a new/updated predictions column. 
 
     '''
-    pred = []
-    # print("predicting")
-    # # for row in tqdm(df.iterrows(),total = 500):
-    # #     pred.append(np.sum(np.multiply(
-    # #                         item_features[row[1].iid], 
-    # #                         user_features[row[1].uid], 
-    # #                         dtype=np.float32)))
-    # df['prediction'] = df.apply(lambda row: np.sum(np.multiply(item_features[row.iid], user_features[row.uid], dtype=np.float32)), axis=1)
-    # print("done")
     df['prediction'] = np.sum(np.multiply(
         item_features[df['iid']], user_features[df['uid']], dtype=np.float32), axis=1)
     return df
@@ -599,7 +606,10 @@ def gradient_reg(df, utility, user_features, item_features, lmbda_a, lmbda_b):
 
     Parameters
     ----------
-    df : pandas DataFramehttps://stackoverflow.com/questions/52715916/numpy-huge-matrix-dot-product-while-multiprocessi
+    df : pandas DataFrame
+        This is the pandas dataframe of the data predictions are to be made on.
+    utility : scipy sparse matrix
+        The sparse utility matrix of all of the ratings.
     user_features : numpy array
         The user feature embeddings.
     item_features : numpy Array
@@ -619,7 +629,6 @@ def gradient_reg(df, utility, user_features, item_features, lmbda_a, lmbda_b):
     # we need to actually make predictions then convert those into a sparse matrix
     temp = predict(df=df, user_features=user_features,
                    item_features=item_features)
-
 
     prediction = sparse.csc_matrix((temp.prediction.values, (temp.uid.values, temp.iid.values)),
                                    shape=(user_features.shape[0], item_features.shape[0]))
@@ -647,7 +656,7 @@ def gradient_descent(df,
                      beta=0.9,
                      updates=True,
                      dfError=None
-                    ):
+                     ):
     ''' 
     Performs gradient descent to find the optimal embedded matrices. A momentum term
     is added to arrive at the minimum sooner. This function will iterate a number of times
@@ -690,6 +699,8 @@ def gradient_descent(df,
     mse_val : float, OPTIONAL
         the final MSE of the validation set
 
+    TODO:
+    1. Need to re-add momentum to see if that helps with MSE.
 
     '''
 
@@ -712,11 +723,10 @@ def gradient_descent(df,
                                             lmbda_a=lmbda_a,
                                             lmbda_b=lmbda_b)
 
-        
         user_features = user_features - learning_rate*grad_user
         item_features = item_features - learning_rate*grad_item
 
-        # just print out values every so often to see what is happening 
+        # just print out values every so often to see what is happening
         # with the algo.
         if(not (i+1) % 50) and (updates):
             print("\niteration", i+1, ":")
@@ -726,7 +736,8 @@ def gradient_descent(df,
                 print("validation mse:",  meanSquareError(
                     val, user_features, item_features))
         if dfError is not None:
-            dfError = dfError.append([[i, meanSquareError(df, user_features, item_features)]])
+            dfError = dfError.append(
+                [[i, meanSquareError(df, user_features, item_features)]])
 
     # compute the final MSE
     mse_train = meanSquareError(df, user_features, item_features)
@@ -735,9 +746,9 @@ def gradient_descent(df,
     if val is not None:
         mse_val = meanSquareError(val, user_features, item_features)
         if dfError is not None:
-                return (user_features, item_features, mse_train, mse_val, dfError)
+            return (user_features, item_features, mse_train, mse_val, dfError)
         return (user_features, item_features, mse_train, mse_val)
-    if dfError is not None: 
+    if dfError is not None:
         return (user_features, item_features, mse_train, dfError)
     return (user_features, item_features, mse_train)
 

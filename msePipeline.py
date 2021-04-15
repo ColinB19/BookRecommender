@@ -53,7 +53,7 @@ class MSEPipeline():
 
     def read_data(self):
         '''
-        Reads the data from an Amazon RDS database. 
+        Reads the data from an Amazon RDS database or the local database depending on DEPLOY value. 
 
         TODO
         ----
@@ -93,7 +93,7 @@ class MSEPipeline():
             DB_NAME = os.environ.get("DB_NAME")
             engine = create_engine(
                 f"postgresql://{DB_USER}:{DB_PASS}@localhost/{DB_NAME}")
-            # this reason for this chunksize structure is to not use too much RAM.
+            # I have plenty of RAM locally, no need for chunks.
             with engine.connect() as connection:
                 self.archived_ratings = pd.read_sql_table(
                     'archive_rating', connection)
@@ -101,10 +101,10 @@ class MSEPipeline():
                     'user_rating', connection)
 
     def remove_ratings_below_thresh(self):
-        """
+        '''
         Here we remove all the archived ratings that are below the given 
         threshhold.
-        """
+        '''
         if self.ratingsThresh != 0:
             # just keep archived ratings above the passed threshhold value
             self.archived_ratings = self.archived_ratings.query(
@@ -129,8 +129,7 @@ class MSEPipeline():
 
     def add_users_to_archive(self):
         '''
-        Here we take our application users reviews (after they've been filtered for low-review
-        users) and tack them onto our existing table of archived ratings.
+        Here we take our application users reviews (after they've been filtered for low-review users) and tack them onto our existing table of archived ratings.
         '''
         # this first bit just adds an archive user ID to our users so
         # they can be tacked onto the end of the archive user ratings.
@@ -166,6 +165,7 @@ class MSEPipeline():
         to enjoy. For this to work you MUST MAKE PREDICTIONS 
         '''
         try:
+            # just remap ID's to their original format
             self.user_predictions.iid = self.user_predictions.iid + 1
             self.user_predictions.uid = self.user_predictions.uid + 1
             recs = self.user_predictions[self.user_predictions.uid.isin(
@@ -198,8 +198,7 @@ class MSEPipeline():
 
     def fix_ids(self):
         '''
-        This function sets the bookand user id's to start at zero. It also changes the name of 
-        headers from user_id and book_id to uid and iid.
+        This function sets the bookand user id's to start at zero. It also changes the name of headers from user_id and book_id to uid and iid.
 
         TODO
         ----
@@ -223,8 +222,7 @@ class MSEPipeline():
     def split_test_train(self,
                          testTrainFrac=0.5,
                          ratingsWithheldFrac=0.4,
-                         testValFrac=0.5,
-                         ratingsThresh=0):
+                         testValFrac=0.5):
         '''
         This function takes in the entire ratings dataset and splits the interaction matrices into a training, testing and validation set.
         First the function splits off a portion of reviews that are then split up into test and validation sets. This function is different
@@ -238,8 +236,6 @@ class MSEPipeline():
             What percentage of the ratings of the test/val users would you like to withhold. The default is 0.4.
         testValFrac : float, optional
             Fraction to split test into test/validation. The default is 0.5.
-        ratingsThresh : int, optional
-            If you only want to include ratings over a certain number. The default is 0.
 
         Returns
         -------
@@ -254,19 +250,9 @@ class MSEPipeline():
         ----
         1. Create cross validation functionality where we can split the data into 3-5 sets.
 
-        FIXME: Splitting causes problems with numbers of books/users
         '''
         import random
         random.seed(1001)
-
-        # only look at ratings above ratingsThresh
-        # FIXME: When you do this it removes users and messes with the user_ids,
-        # you have to rework id's in this case to serialize them
-        if ratingsThresh != 0:
-            self.archived_ratings = self.archived_ratings.query(
-                'rating >= @ratingsThresh')
-            temp_uids = reserialize_users(self.archived_ratings.uid.unique().tolist())
-            self.archived_ratings.uid = self.archived_ratings.uid.map(temp_uids)
 
         # let's get the list of users for the test set
         uids = self.archived_ratings.uid.unique().tolist()
@@ -589,6 +575,8 @@ def meanSquareError(df, user_features, item_features):
     mse : float
         The mean square error for the given embedding matrices. 
 
+    TODO:
+    1. Fix this to generalize for any number of features???
     '''
     # we need to actually make predictions then convert those into a sparse matrix
     utility = create_sparse_matrix(

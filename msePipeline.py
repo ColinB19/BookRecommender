@@ -1,14 +1,13 @@
 """
 author: Colin Bradley
-last updated: 03/04/2021
+last updated: 04/15/2021
 
 FIXME: Val step in SGD not working.
 
 TODO
 ----
-1. Docstrings, comments, general cleanliness
-2. Still improving hyperparam optimization.
-3. Parallelize SGD
+1. Still improving hyperparam optimization.
+2. Parallelize SGD.
 
 """
 

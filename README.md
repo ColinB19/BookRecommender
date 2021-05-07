@@ -1,6 +1,6 @@
 # Book Recommender
 
-This repo contains all updates to my book recommender. 
+This repo contains all updates to my book recommender. If you want to run a quick recommendation. Be sure you have the goodbooks-10k dataset  
 
 # Files
 

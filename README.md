@@ -3,10 +3,13 @@
 
 Hello and welcome to The Book Spot! Here you will find all the code I wrote to get my book recommender up, making recommendations, and deployed to an application. If you like machine learning, front-end development, cloud computing or just books then this is the project for you. This project utilizes collaborative based filtering (matrix factorization) to fill latent feature matrices in order to predict ratings on unread books. Please visit my [blog](https://colinb19.github.io/) for more information about this process!
 
+If you need any help, have any questions or comments, don't hesitate to contact me! You can find me on [LinkedIn](https://www.linkedin.com/in/colin-bradley-data-motivated/) or [Twitter](https://twitter.com/data_motivated).
+
+
 ## Motivation
 
+I was reading the last few books of Robert Jordan's Wheel of Time series when it hit me, what will I do after this? Since I am learning data science, the answer came fairly quickly: I need a new series, why don't I write my own program to recommend one to me? I decided to make this project full-stack, meanning I would be in charge of every stage from data gathering to model deployment. I ended up writing a web scraper but using the [goodbooks-10k](https://github.com/zygmuntz/goodbooks-10k). I then went to work building a model and deploying it to [Heroku(https://www.heroku.com) .
 
-I was reading the last few books of Robert Jordan's Wheel of Time series when it hit me, what will I do after this? Since I am learning data science, the answer came fairly quickly: I need a new series, why don't I write my own program to recommend one to me? I decided to make this project full-stack, meanning I would be in charge of every stage from data gathering to model deployment. I ended up writing a web scraper but using the [goodbooks-10k](https://github.com/zygmuntz/goodbooks-10k). I then went to work building a model and deploying it to (Heroku)[https://www.heroku.com/].
 
 ## Features
 

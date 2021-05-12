@@ -8,7 +8,7 @@ If you need any help, have any questions or comments, don't hesitate to contact 
 
 ## Motivation
 
-I was reading the last few books of Robert Jordan's Wheel of Time series when it hit me, what will I do after this? Since I am learning data science, the answer came fairly quickly: I need a new series, why don't I write my own program to recommend one to me? I decided to make this project full-stack, meanning I would be in charge of every stage from data gathering to model deployment. I ended up writing a web scraper but using the [goodbooks-10k](https://github.com/zygmuntz/goodbooks-10k). I then went to work building a model and deploying it to [Heroku(https://www.heroku.com) .
+I was reading the last few books of Robert Jordan's Wheel of Time series when it hit me, what will I do after this? Since I am learning data science, the answer came fairly quickly: I need a new series, why don't I write my own program to recommend one to me? I decided to make this project full-stack, meanning I would be in charge of every stage from data gathering to model deployment. I ended up writing a web scraper but using the [goodbooks-10k](https://github.com/zygmuntz/goodbooks-10k). I then went to work building a model and deploying it to [Heroku](https://www.heroku.com) .
 
 
 ## Features

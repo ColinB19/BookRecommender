@@ -1,6 +1,6 @@
 """
 author: Colin Bradley
-last updated: 04/15/2021
+last updated: 05/12/2021
 
 FIXME: Val step in SGD not working.
 
@@ -59,10 +59,10 @@ class MSEPipeline():
         1. Add functionality to pull from local database.
             - FIXED 03/02/2021:17:35PST 
         2. Add user functionality in local database.
+        3. Add ability to pull from local CSV files.
         '''
 
-        # the following lines set up SQL alchemy to grab data from my RDS database. You may need to adjust
-        # this to fit yours.
+        # the following lines set up SQL alchemy to grab data from my RDS database. You may need to adjust this to fit yours.
 
         if self.deploy:  # if we are running from RDS server
             RDS_HOSTNAME = os.environ.get("RDS_HOSTNAME")
